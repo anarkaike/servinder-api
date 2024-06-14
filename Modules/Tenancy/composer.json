@@ -1,0 +1,29 @@
+{
+  "name":         "nwidart/tenancy",
+  "description":  "",
+  "authors":      [
+    {
+      "name":  "Junio",
+      "email": "anarkaike@gmail.com"
+    }
+  ],
+  "extra":        {
+    "laravel": {
+      "providers": [],
+      "aliases":   {
+      }
+    }
+  },
+  "autoload":     {
+    "psr-4": {
+      "Modules\\Tenancy\\App\\":                 "app/",
+      "Modules\\Tenancy\\Database\\Factories\\": "database/factories/",
+      "Modules\\Tenancy\\Database\\Seeders\\":   "database/seeders/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Modules\\Tenancy\\Tests\\": "tests/"
+    }
+  }
+}

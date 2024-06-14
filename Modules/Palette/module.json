@@ -1,0 +1,11 @@
+{
+  "name":        "Palette",
+  "alias":       "palette",
+  "description": "",
+  "keywords":    [],
+  "priority":    0,
+  "providers":   [
+    "Modules\\Palette\\App\\Providers\\PaletteServiceProvider"
+  ],
+  "files":       []
+}

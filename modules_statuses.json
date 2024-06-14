@@ -1,0 +1,9 @@
+{
+    "Users": true,
+    "AccessControl": true,
+    "Tenancy": true,
+    "Trade": true,
+    "Events": true,
+    "Financial": true,
+    "Palette": true
+}

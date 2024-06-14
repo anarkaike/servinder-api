@@ -1,0 +1,29 @@
+{
+  "name":         "nwidart/palette",
+  "description":  "",
+  "authors":      [
+    {
+      "name":  "Junio",
+      "email": "anarkaike@gmail.com"
+    }
+  ],
+  "extra":        {
+    "laravel": {
+      "providers": [],
+      "aliases":   {
+      }
+    }
+  },
+  "autoload":     {
+    "psr-4": {
+      "Modules\\Palette\\App\\":                 "app/",
+      "Modules\\Palette\\Database\\Factories\\": "database/factories/",
+      "Modules\\Palette\\Database\\Seeders\\":   "database/seeders/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Modules\\Palette\\Tests\\": "tests/"
+    }
+  }
+}

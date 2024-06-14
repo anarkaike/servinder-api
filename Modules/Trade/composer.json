@@ -1,0 +1,29 @@
+{
+  "name":         "nwidart/trade",
+  "description":  "",
+  "authors":      [
+    {
+      "name":  "Junio",
+      "email": "anarkaike@gmail.com"
+    }
+  ],
+  "extra":        {
+    "laravel": {
+      "providers": [],
+      "aliases":   {
+      }
+    }
+  },
+  "autoload":     {
+    "psr-4": {
+      "Modules\\Trade\\App\\":                 "app/",
+      "Modules\\Trade\\Database\\Factories\\": "database/factories/",
+      "Modules\\Trade\\Database\\Seeders\\":   "database/seeders/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Modules\\Trade\\Tests\\": "tests/"
+    }
+  }
+}

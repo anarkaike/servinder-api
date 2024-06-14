@@ -1,0 +1,29 @@
+{
+  "name":         "nwidart/financial",
+  "description":  "",
+  "authors":      [
+    {
+      "name":  "Junio",
+      "email": "anarkaike@gmail.com"
+    }
+  ],
+  "extra":        {
+    "laravel": {
+      "providers": [],
+      "aliases":   {
+      }
+    }
+  },
+  "autoload":     {
+    "psr-4": {
+      "Modules\\Financial\\App\\":                 "app/",
+      "Modules\\Financial\\Database\\Factories\\": "database/factories/",
+      "Modules\\Financial\\Database\\Seeders\\":   "database/seeders/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Modules\\Financial\\Tests\\": "tests/"
+    }
+  }
+}
