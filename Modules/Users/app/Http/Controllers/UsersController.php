@@ -2,13 +2,13 @@
 
 namespace Modules\Users\app\Http\Controllers;
 
-use App\Http\app\Http\Requests\UsersRequest;
-use App\Http\Controllers\ApiController;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Modules\Users\app\Http\Requests\UsersRequest;
 use Modules\Users\app\Models\User;
 use Modules\Users\app\Policies\UsersPolicy;
 
-class UsersController extends ApiController
+class UsersController extends Controller
 {
     /**
      * Fully-qualified model class name

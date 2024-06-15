@@ -1,40 +1,36 @@
 <?php
 
-namespace App\Http\app\Http\Requests;
+namespace Modules\Users\app\Http\Requests;
 
-use Orion\Http\Requests\Request as BaseRequest;
+use Illuminate\Foundation\Http\FormRequest;
 
-class UsersRequest extends BaseRequest
+class UsersRequest extends FormRequest
 {
-    public function commonRules(): array
+    public function rules()
     {
         return [
-            'title' => 'required',
+//            'name'         => 'required|string|unique:permissions,name,' . $this->permission,
+//            'display_name' => 'required|string',
+//            'description'  => 'nullable|string',
+//            'type'         => 'required|string|in:' . implode(',', Permission::getAllTypes()),
         ];
     }
     
-    public function storeRules(): array
+    public function authorize()
+    {
+        return TRUE; // O retorno dependerá da sua lógica de autorização
+    }
+    
+    public function messages()
     {
         return [
-            'status' => 'required|in:draft,review',
+            ...parent::messages(),
+            ...[
+//            'name.unique'           => 'Já existe uma permissão com esse nome.',
+//            'name.required'         => 'O campo nome é obrigatório.',
+//            'display_name.required' => 'O campo nome de exibição é obrigatório.',
+//            'type.in'               => 'O tipo selecionado é inválido.',
+            ],
         ];
     }
-
-//    /**
-//     * Get the validation rules that apply to the request.
-//     */
-//    public function rules(): array
-//    {
-//        return [
-//            //
-//        ];
-//    }
-//
-//    /**
-//     * Determine if the user is authorized to make this request.
-//     */
-//    public function authorize(): bool
-//    {
-//        return TRUE;
-//    }
 }

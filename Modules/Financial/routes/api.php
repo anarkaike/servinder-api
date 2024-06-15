@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\Financial\app\Http\Controllers\FinancialController;
+use Modules\Financial\app\Http\Controllers\WalletController;
 
 /*
  *--------------------------------------------------------------------------
@@ -17,6 +17,6 @@ use Modules\Financial\app\Http\Controllers\FinancialController;
 Route::middleware(['auth:sanctum'])->prefix('v1')->group(
     function ()
     {
-        Route::apiResource('financial', FinancialController::class)->names('financial');
+        Route::apiResource('financial', WalletController::class)->names('financial');
     },
 );

@@ -2,8 +2,14 @@
 
 namespace Modules\AccessControl\app\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Modules\AccessControl\app\Enums\ERolesTypes;
 
 class Profile extends Model
 {
+    use ProfileSchemeTrait;
+    
+    static public function getRolesTypes(): array
+    {
+        return [ERolesTypes::cases()];
+    }
 }

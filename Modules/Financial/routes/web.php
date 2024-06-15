@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\Financial\app\Http\Controllers\FinancialController;
+use Modules\Financial\app\Http\Controllers\WalletController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,6 +18,6 @@ Route::group(
     [],
     function ()
     {
-        Route::resource('financial', FinancialController::class)->names('financial');
+        Route::resource('financial', WalletController::class)->names('financial');
     },
 );
