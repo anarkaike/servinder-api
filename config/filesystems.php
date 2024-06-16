@@ -1,7 +1,7 @@
 <?php
 
 return [
-
+    
     /*
     |--------------------------------------------------------------------------
     | Default Filesystem Disk
@@ -12,9 +12,9 @@ return [
     | based disks are available to your application for file storage.
     |
     */
-
+    
     'default' => env('FILESYSTEM_DISK', 'local'),
-
+    
     /*
     |--------------------------------------------------------------------------
     | Filesystem Disks
@@ -27,37 +27,43 @@ return [
     | Supported drivers: "local", "ftp", "sftp", "s3"
     |
     */
-
+    
     'disks' => [
-
+        
         'local' => [
             'driver' => 'local',
-            'root' => storage_path('app'),
-            'throw' => false,
+            'root'   => storage_path('app'),
+            'throw'  => FALSE,
         ],
-
-        'public' => [
+        
+        'media' => [
             'driver' => 'local',
-            'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'root'   => public_path('media'),
+            'url'    => env('APP_URL') . '/media',
+        ],
+        
+        'public' => [
+            'driver'     => 'local',
+            'root'       => storage_path('app/public'),
+            'url'        => env('APP_URL') . '/storage',
             'visibility' => 'public',
-            'throw' => false,
+            'throw'      => FALSE,
         ],
-
+        
         's3' => [
-            'driver' => 's3',
-            'key' => env('AWS_ACCESS_KEY_ID'),
-            'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            'region' => env('AWS_DEFAULT_REGION'),
-            'bucket' => env('AWS_BUCKET'),
-            'url' => env('AWS_URL'),
-            'endpoint' => env('AWS_ENDPOINT'),
-            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
-            'throw' => false,
+            'driver'                  => 's3',
+            'key'                     => env('AWS_ACCESS_KEY_ID'),
+            'secret'                  => env('AWS_SECRET_ACCESS_KEY'),
+            'region'                  => env('AWS_DEFAULT_REGION'),
+            'bucket'                  => env('AWS_BUCKET'),
+            'url'                     => env('AWS_URL'),
+            'endpoint'                => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', FALSE),
+            'throw'                   => FALSE,
         ],
-
+    
     ],
-
+    
     /*
     |--------------------------------------------------------------------------
     | Symbolic Links
@@ -68,7 +74,7 @@ return [
     | the locations of the links and the values should be their targets.
     |
     */
-
+    
     'links' => [
         public_path('storage') => storage_path('app/public'),
     ],

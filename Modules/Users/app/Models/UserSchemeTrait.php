@@ -50,8 +50,7 @@ trait UserSchemeTrait
                 ESchemaKey::LENGTH      => 255,
                 ESchemaKey::LABEL       => 'Nome',
                 ESchemaKey::DESCRIPTION => 'Name of the user',
-                ESchemaKey::POSITION    => $position++,
-                ESchemaKey::POSITION    => 3,
+                ESchemaKey::POSITION    => 6,
             ],
             self::EMAIL             => [
                 ESchemaKey::ONLY_DESCRIPTION => TRUE, // Schema does not manage

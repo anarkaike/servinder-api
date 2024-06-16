@@ -5,6 +5,7 @@ namespace App\ModelSchemas\Commands\Drivers;
 use App\ModelSchemas\Commands\Contracts\SchemaInterpreterInterface;
 use App\ModelSchemas\Enums\EColumnType;
 use App\ModelSchemas\Enums\ESchemaKey;
+use App\Helpers\Logger;
 use Exception;
 use Illuminate\Database\Schema\Blueprint;
 
@@ -73,6 +74,13 @@ class SchemaInterpreter implements SchemaInterpreterInterface
         EColumnType::YEAR                    => 'YEAR',
     ];
     
+    private Logger $logger;
+    
+    public function __construct(Logger $logger)
+    {
+        $this->logger = $logger;
+    }
+    
     public function getColumnType(string $type): string
     {
         return $this->typeMap[ $type ] ?? $type;
@@ -119,7 +127,6 @@ class SchemaInterpreter implements SchemaInterpreterInterface
         return 'apply' . ucfirst(strtolower($type)) . 'Type';
     }
     
-    // Adiciona suporte ao tipo 'increments'
     private function applyIncrementsType(Blueprint $table, string $column, array $definition)
     {
         return $table->increments($column);

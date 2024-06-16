@@ -17,14 +17,21 @@ trait EventSchemeTrait
     public function getSchema(): array
     {
         return [
-            'id'   => [
+            'id'          => [
                 ESchemaKey::TYPE           => EColumnType::BIG_INTEGER,
+                ESchemaKey::PRIMARY_KEY    => TRUE,
                 ESchemaKey::NOT_NULL       => TRUE,
                 ESchemaKey::AUTO_INCREMENT => TRUE,
                 ESchemaKey::PRIMARY_KEY    => TRUE,
                 ESchemaKey::POSITION       => 1,
             ],
-            'name' => [
+            'name'        => [
+                ESchemaKey::TYPE     => EColumnType::STRING,
+                ESchemaKey::NOT_NULL => TRUE,
+                ESchemaKey::LENGTH   => 255,
+                ESchemaKey::POSITION => 2,
+            ],
+            'description' => [
                 ESchemaKey::TYPE     => EColumnType::STRING,
                 ESchemaKey::NOT_NULL => TRUE,
                 ESchemaKey::LENGTH   => 255,
