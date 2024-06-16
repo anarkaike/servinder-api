@@ -8,8 +8,9 @@ use App\ModelSchemas\Enums\ESchemaValue;
 
 trait AddDefaultColumnsTrait
 {
-    const ID        = 'id';
-    const TENANT_ID = 'tenant_id';
+    const ID                            = 'id';
+    const TENANT_ID                     = 'tenant_id';
+    const ALLOW_RECREATE_TABLE_IN_ORDER = TRUE;
     
     use AddAuditColumnsTrait;
     
@@ -41,7 +42,8 @@ trait AddDefaultColumnsTrait
         return [
             ...[
                 self::ID => [
-                    ESchemaKey::TYPE        => EColumnType::INCREMENTS,
+                    ESchemaKey::TYPE        => EColumnType::UNSIGNED_BIG_INTEGER,
+                    ESchemaKey::PRIMARY_KEY => TRUE,
                     ESchemaKey::NOT_NULL    => TRUE,
                     ESchemaKey::LABEL       => 'ID',
                     ESchemaKey::DESCRIPTION => 'ID do registro.',

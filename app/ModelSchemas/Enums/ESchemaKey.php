@@ -4,8 +4,12 @@ namespace App\ModelSchemas\Enums;
 
 enum ESchemaKey
 {
-    const SYNC_PAUSED      = 'sync_paused';      // Schema does not manage (sinonimous of ONLY_DESCRIPTION)
-    const ONLY_DESCRIPTION = 'ONLY_DESCRIPTION'; // Schema does not manage (sinonimous of SYNC_PAUSED)
+    const AUTO_INCREMENT   = 'auto_increment';
+    const PRIMARY_KEY      = 'primary_key';
+    const SYNC_PAUSED      = 'sync_paused';         // Schema does not manage (sinonimous of ONLY_DESCRIPTION)
+    const AFTER            = 'after';               // Schema does not manage (sinonimous of ONLY_DESCRIPTION)
+    const BEFORE           = 'before';              // Schema does not manage (sinonimous of ONLY_DESCRIPTION)
+    const ONLY_DESCRIPTION = 'ONLY_DESCRIPTION';    // Schema does not manage (sinonimous of SYNC_PAUSED)
     const VERSIONED        = 'versioned';
     const POSITION         = 'position';
     const TYPE             = 'type';

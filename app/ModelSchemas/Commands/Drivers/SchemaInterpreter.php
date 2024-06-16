@@ -7,38 +7,7 @@ use App\ModelSchemas\Enums\EColumnType;
 use App\ModelSchemas\Enums\ESchemaKey;
 use Exception;
 use Illuminate\Database\Schema\Blueprint;
-use function in_array;
-use function method_exists;
-use function strtolower;
-use function ucfirst;
 
-
-/**
- * Classe responsável por interpretar e gerar definições de esquema de banco de dados.
- *
- * Português
- * Esta classe é responsável por interpretar e gerar definições de esquema de banco de dados
- * a partir de um array de configuração. Ela fornece métodos para converter tipos de colunas,
- * gerar strings de definição de colunas e aplicar tipos de colunas em um Blueprint do Laravel.
- *
- * Espanhol
- * Esta clase es responsable por interpretar y generar definiciones de esquema de base de datos
- * a partir de un array de configuración. Proporciona métodos para convertir tipos de columnas,
- * generar cadenas de definición de columnas y aplicar tipos de columnas en un Blueprint de Laravel.
- *
- * Inglês
- * This class is responsible for interpreting and generating database schema definitions
- * from a configuration array. It provides methods to convert column types, generate column
- * definition strings, and apply column types in a Laravel Blueprint.
- *
- * Principais objetivos:
- * - Interpretar e gerar definições de esquema de banco de dados a partir de um array de configuração.
- * - Fornecer métodos flexíveis e extensíveis para lidar com diferentes tipos de colunas e definições.
- * - Suportar a geração de strings de definição de colunas com comprimentos e precisões específicos.
- * - Garantir a compatibilidade com o framework Laravel Blueprint.
- *
- * @author Júnio de Almeida Vitorino <anarkaike@gmail.com>
- */
 class SchemaInterpreter implements SchemaInterpreterInterface
 {
     private array $columnTypesWithLength = [
@@ -131,11 +100,14 @@ class SchemaInterpreter implements SchemaInterpreterInterface
         return isset($schemaDefinition[ ESchemaKey::NOT_NULL ]) && $schemaDefinition[ ESchemaKey::NOT_NULL ] ? 'NOT NULL' : 'NULL';
     }
     
-    public function applyColumnType(Blueprint $table, string $column, string $type, array $definition): void
+    public function applyColumnType(Blueprint $table, string $column, string $type, array $definition, ?string $afterColumn = NULL): void
     {
         $method = $this->getColumnMethod($type);
         if (method_exists($this, $method)) {
-            $this->$method($table, $column, $definition);
+            $columnInstance = $this->$method($table, $column, $definition);
+            if ($afterColumn) {
+                $columnInstance->after($afterColumn);
+            }
         }
         else {
             throw new Exception("Unsupported column type: $type");
@@ -147,243 +119,249 @@ class SchemaInterpreter implements SchemaInterpreterInterface
         return 'apply' . ucfirst(strtolower($type)) . 'Type';
     }
     
-    private function applyBigIntegerType(Blueprint $table, string $column, array $definition): void
+    // Adiciona suporte ao tipo 'increments'
+    private function applyIncrementsType(Blueprint $table, string $column, array $definition)
     {
-        $table->bigInteger($column);
+        return $table->increments($column);
     }
     
-    private function applyBinaryType(Blueprint $table, string $column, array $definition): void
+    private function applyBigIntegerType(Blueprint $table, string $column, array $definition)
     {
-        $table->binary($column);
+        return $table->bigInteger($column);
     }
     
-    private function applyBooleanType(Blueprint $table, string $column, array $definition): void
+    private function applyBinaryType(Blueprint $table, string $column, array $definition)
     {
-        $table->boolean($column);
+        return $table->binary($column);
     }
     
-    private function applyCharType(Blueprint $table, string $column, array $definition): void
+    private function applyBooleanType(Blueprint $table, string $column, array $definition)
     {
-        $table->char($column, $definition[ ESchemaKey::LENGTH ] ?? NULL);
+        return $table->boolean($column);
     }
     
-    private function applyDateType(Blueprint $table, string $column, array $definition): void
+    private function applyCharType(Blueprint $table, string $column, array $definition)
     {
-        $table->date($column);
+        return $table->char($column, $definition[ ESchemaKey::LENGTH ] ?? NULL);
     }
     
-    private function applyDateTimeType(Blueprint $table, string $column, array $definition): void
+    private function applyDateType(Blueprint $table, string $column, array $definition)
     {
-        $table->dateTime($column);
+        return $table->date($column);
     }
     
-    private function applyDateTimeTzType(Blueprint $table, string $column, array $definition): void
+    private function applyDateTimeType(Blueprint $table, string $column, array $definition)
     {
-        $table->dateTimeTz($column);
+        return $table->dateTime($column);
     }
     
-    private function applyDecimalType(Blueprint $table, string $column, array $definition): void
+    private function applyDateTimeTzType(Blueprint $table, string $column, array $definition)
     {
-        $table->decimal($column, $definition[ ESchemaKey::PRECISION ] ?? 8, $definition[ ESchemaKey::SCALE ] ?? 2);
+        return $table->dateTimeTz($column);
     }
     
-    private function applyDoubleType(Blueprint $table, string $column, array $definition): void
+    private function applyDecimalType(Blueprint $table, string $column, array $definition)
     {
-        $table->double($column, $definition[ ESchemaKey::PRECISION ] ?? 8, $definition[ ESchemaKey::SCALE ] ?? 2);
+        return $table->decimal($column, $definition[ ESchemaKey::PRECISION ] ?? 8, $definition[ ESchemaKey::SCALE ] ?? 2);
     }
     
-    private function applyEnumType(Blueprint $table, string $column, array $definition): void
+    private function applyDoubleType(Blueprint $table, string $column, array $definition)
     {
-        $table->enum($column, $definition[ ESchemaKey::VALUES ] ?? []);
+        return $table->double($column, $definition[ ESchemaKey::PRECISION ] ?? 8, $definition[ ESchemaKey::SCALE ] ?? 2);
     }
     
-    private function applyFloatType(Blueprint $table, string $column, array $definition): void
+    private function applyEnumType(Blueprint $table, string $column, array $definition)
     {
-        $table->float($column, $definition[ ESchemaKey::PRECISION ] ?? 8, $definition[ ESchemaKey::SCALE ] ?? 2);
+        return $table->enum($column, $definition[ ESchemaKey::VALUES ] ?? []);
     }
     
-    private function applyForeignIdType(Blueprint $table, string $column, array $definition): void
+    private function applyFloatType(Blueprint $table, string $column, array $definition)
     {
-        $table->foreignId($column);
+        return $table->float($column, $definition[ ESchemaKey::PRECISION ] ?? 8, $definition[ ESchemaKey::SCALE ] ?? 2);
     }
     
-    private function applyGeometryType(Blueprint $table, string $column, array $definition): void
+    private function applyForeignIdType(Blueprint $table, string $column, array $definition)
     {
-        $table->geometry($column);
+        return $table->foreignId($column);
     }
     
-    private function applyGeometryCollectionType(Blueprint $table, string $column, array $definition): void
+    private function applyGeometryType(Blueprint $table, string $column, array $definition)
     {
-        $table->geometryCollection($column);
+        return $table->geometry($column);
     }
     
-    private function applyIntegerType(Blueprint $table, string $column, array $definition): void
+    private function applyGeometryCollectionType(Blueprint $table, string $column, array $definition)
     {
-        $table->integer($column);
+        return $table->geometryCollection($column);
     }
     
-    private function applyIpAddressType(Blueprint $table, string $column, array $definition): void
+    private function applyIntegerType(Blueprint $table, string $column, array $definition)
     {
-        $table->ipAddress($column);
+        return $table->integer($column);
     }
     
-    private function applyJsonType(Blueprint $table, string $column, array $definition): void
+    private function applyIpAddressType(Blueprint $table, string $column, array $definition)
     {
-        $table->json($column);
+        return $table->ipAddress($column);
     }
     
-    private function applyJsonbType(Blueprint $table, string $column, array $definition): void
+    private function applyJsonType(Blueprint $table, string $column, array $definition)
     {
-        $table->jsonb($column);
+        return $table->json($column);
     }
     
-    private function applyLineStringType(Blueprint $table, string $column, array $definition): void
+    private function applyJsonbType(Blueprint $table, string $column, array $definition)
     {
-        $table->lineString($column);
+        return $table->jsonb($column);
     }
     
-    private function applyLongTextType(Blueprint $table, string $column, array $definition): void
+    private function applyLineStringType(Blueprint $table, string $column, array $definition)
     {
-        $table->longText($column);
+        return $table->lineString($column);
     }
     
-    private function applyMacAddressType(Blueprint $table, string $column, array $definition): void
+    private function applyLongTextType(Blueprint $table, string $column, array $definition)
     {
-        $table->macAddress($column);
+        return $table->longText($column);
     }
     
-    private function applyMediumIntegerType(Blueprint $table, string $column, array $definition): void
+    private function applyMacAddressType(Blueprint $table, string $column, array $definition)
     {
-        $table->mediumInteger($column);
+        return $table->macAddress($column);
     }
     
-    private function applyMediumTextType(Blueprint $table, string $column, array $definition): void
+    private function applyMediumIntegerType(Blueprint $table, string $column, array $definition)
     {
-        $table->mediumText($column);
+        return $table->mediumInteger($column);
     }
     
-    private function applyMultiLineStringType(Blueprint $table, string $column, array $definition): void
+    private function applyMediumTextType(Blueprint $table, string $column, array $definition)
     {
-        $table->multiLineString($column);
+        return $table->mediumText($column);
     }
     
-    private function applyMultiPointType(Blueprint $table, string $column, array $definition): void
+    private function applyMultiLineStringType(Blueprint $table, string $column, array $definition)
     {
-        $table->multiPoint($column);
+        return $table->multiLineString($column);
     }
     
-    private function applyMultiPolygonType(Blueprint $table, string $column, array $definition): void
+    private function applyMultiPointType(Blueprint $table, string $column, array $definition)
     {
-        $table->multiPolygon($column);
+        return $table->multiPoint($column);
     }
     
-    private function applyPointType(Blueprint $table, string $column, array $definition): void
+    private function applyMultiPolygonType(Blueprint $table, string $column, array $definition)
     {
-        $table->point($column);
+        return $table->multiPolygon($column);
     }
     
-    private function applyPolygonType(Blueprint $table, string $column, array $definition): void
+    private function applyPointType(Blueprint $table, string $column, array $definition)
     {
-        $table->polygon($column);
+        return $table->point($column);
     }
     
-    private function applyRememberTokenType(Blueprint $table, string $column, array $definition): void
+    private function applyPolygonType(Blueprint $table, string $column, array $definition)
     {
-        $table->rememberToken();
+        return $table->polygon($column);
     }
     
-    private function applySetType(Blueprint $table, string $column, array $definition): void
+    private function applyRememberTokenType(Blueprint $table, string $column, array $definition)
     {
-        $table->set($column, $definition[ ESchemaKey::VALUES ] ?? []);
+        return $table->rememberToken();
     }
     
-    private function applySmallIntegerType(Blueprint $table, string $column, array $definition): void
+    private function applySetType(Blueprint $table, string $column, array $definition)
     {
-        $table->smallInteger($column);
+        return $table->set($column, $definition[ ESchemaKey::VALUES ] ?? []);
     }
     
-    private function applySoftDeletesType(Blueprint $table, string $column, array $definition): void
+    private function applySmallIntegerType(Blueprint $table, string $column, array $definition)
     {
-        $table->softDeletes($column);
+        return $table->smallInteger($column);
     }
     
-    private function applySoftDeletesTzType(Blueprint $table, string $column, array $definition): void
+    private function applySoftDeletesType(Blueprint $table, string $column, array $definition)
     {
-        $table->softDeletesTz($column);
+        return $table->softDeletes($column);
     }
     
-    private function applyStringType(Blueprint $table, string $column, array $definition): void
+    private function applySoftDeletesTzType(Blueprint $table, string $column, array $definition)
     {
-        $table->string($column, $definition[ ESchemaKey::LENGTH ] ?? 255);
+        return $table->softDeletesTz($column);
     }
     
-    private function applyTextType(Blueprint $table, string $column, array $definition): void
+    private function applyStringType(Blueprint $table, string $column, array $definition)
     {
-        $table->text($column);
+        return $table->string($column, $definition[ ESchemaKey::LENGTH ] ?? 255);
     }
     
-    private function applyTimeType(Blueprint $table, string $column, array $definition): void
+    private function applyTextType(Blueprint $table, string $column, array $definition)
     {
-        $table->time($column);
+        return $table->text($column);
     }
     
-    private function applyTimeTzType(Blueprint $table, string $column, array $definition): void
+    private function applyTimeType(Blueprint $table, string $column, array $definition)
     {
-        $table->timeTz($column);
+        return $table->time($column);
     }
     
-    private function applyTimestampType(Blueprint $table, string $column, array $definition): void
+    private function applyTimeTzType(Blueprint $table, string $column, array $definition)
     {
-        $table->timestamp($column);
+        return $table->timeTz($column);
     }
     
-    private function applyTimestampTzType(Blueprint $table, string $column, array $definition): void
+    private function applyTimestampType(Blueprint $table, string $column, array $definition)
     {
-        $table->timestampTz($column);
+        return $table->timestamp($column);
     }
     
-    private function applyTinyIntegerType(Blueprint $table, string $column, array $definition): void
+    private function applyTimestampTzType(Blueprint $table, string $column, array $definition)
     {
-        $table->tinyInteger($column);
+        return $table->timestampTz($column);
     }
     
-    private function applyUnsignedBigIntegerType(Blueprint $table, string $column, array $definition): void
+    private function applyTinyIntegerType(Blueprint $table, string $column, array $definition)
     {
-        $table->unsignedBigInteger($column);
+        return $table->tinyInteger($column);
     }
     
-    private function applyUnsignedDecimalType(Blueprint $table, string $column, array $definition): void
+    private function applyUnsignedBigIntegerType(Blueprint $table, string $column, array $definition)
     {
-        $table->unsignedDecimal($column, $definition[ ESchemaKey::PRECISION ] ?? 8, $definition[ ESchemaKey::SCALE ] ?? 2);
+        return $table->unsignedBigInteger($column);
     }
     
-    private function applyUnsignedIntegerType(Blueprint $table, string $column, array $definition): void
+    private function applyUnsignedDecimalType(Blueprint $table, string $column, array $definition)
     {
-        $table->unsignedInteger($column);
+        return $table->unsignedDecimal($column, $definition[ ESchemaKey::PRECISION ] ?? 8, $definition[ ESchemaKey::SCALE ] ?? 2);
     }
     
-    private function applyUnsignedMediumIntegerType(Blueprint $table, string $column, array $definition): void
+    private function applyUnsignedIntegerType(Blueprint $table, string $column, array $definition)
     {
-        $table->unsignedMediumInteger($column);
+        return $table->unsignedInteger($column);
     }
     
-    private function applyUnsignedSmallIntegerType(Blueprint $table, string $column, array $definition): void
+    private function applyUnsignedMediumIntegerType(Blueprint $table, string $column, array $definition)
     {
-        $table->unsignedSmallInteger($column);
+        return $table->unsignedMediumInteger($column);
     }
     
-    private function applyUnsignedTinyIntegerType(Blueprint $table, string $column, array $definition): void
+    private function applyUnsignedSmallIntegerType(Blueprint $table, string $column, array $definition)
     {
-        $table->unsignedTinyInteger($column);
+        return $table->unsignedSmallInteger($column);
     }
     
-    private function applyUuidType(Blueprint $table, string $column, array $definition): void
+    private function applyUnsignedTinyIntegerType(Blueprint $table, string $column, array $definition)
     {
-        $table->uuid($column);
+        return $table->unsignedTinyInteger($column);
     }
     
-    private function applyYearType(Blueprint $table, string $column, array $definition): void
+    private function applyUuidType(Blueprint $table, string $column, array $definition)
     {
-        $table->year($column);
+        return $table->uuid($column);
+    }
+    
+    private function applyYearType(Blueprint $table, string $column, array $definition)
+    {
+        return $table->year($column);
     }
 }

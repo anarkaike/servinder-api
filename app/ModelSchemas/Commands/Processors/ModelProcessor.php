@@ -13,7 +13,7 @@ use App\ModelSchemas\Commands\Contracts\ColumnManagerInterface;
 use App\ModelSchemas\Commands\Contracts\ModelProcessorInterface;
 use App\ModelSchemas\Commands\Contracts\SchemaInterpreterInterface;
 use App\ModelSchemas\Commands\Contracts\VersionManagerInterface;
-use App\ModelSchemas\Commands\Updaters\SchemaUpdater;
+use App\ModelSchemas\Commands\Updaters\SchemaSynchronizer;
 use FilesystemIterator;
 use Illuminate\Support\Facades\File;
 
@@ -131,7 +131,7 @@ class ModelProcessor implements ModelProcessorInterface
      */
     private function updateDatabaseSchemaForNamespace(string $namespace): void
     {
-        $schemaUpdater = new SchemaUpdater(
+        $schemaUpdater = new SchemaSynchronizer(
             columnBackup     : $this->columnBackup,
             columnManager    : $this->columnManager,
             versionManager   : $this->versionManager,

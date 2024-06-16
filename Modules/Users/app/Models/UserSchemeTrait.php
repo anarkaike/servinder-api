@@ -13,6 +13,7 @@ trait UserSchemeTrait
     use AddDefaultColumnsTrait;
     
     const NAME              = 'name';
+    const NAME2             = 'name2';
     const PARENT_ID         = 'parent_id';
     const EMAIL             = 'email';
     const EMAIL_VERIFIED_AT = 'email_verified_at';
@@ -26,11 +27,12 @@ trait UserSchemeTrait
             self::PARENT_ID         => [
                 ESchemaKey::TYPE     => EColumnType::UNSIGNED_BIG_INTEGER,
                 ESchemaKey::NULLABLE => TRUE,
+                ESchemaKey::POSITION => 4,
                 ESchemaKey::ON       => [
                     ESchemaKey::ON_FK     => SchemaHelper::table(User::class),
                     ESchemaKey::ON_COLUMN => 'id',
-                    ESchemaKey::ON_DELETE => ESchemaValue::ON_NO_ACTON,
-                    ESchemaKey::ON_UPDATE => ESchemaValue::ON_NO_ACTON,
+                    ESchemaKey::ON_DELETE => ESchemaValue::ON_NO_ACTION,
+                    ESchemaKey::ON_UPDATE => ESchemaValue::ON_NO_ACTION,
                 ],
             ],
             self::NAME              => [
@@ -41,6 +43,15 @@ trait UserSchemeTrait
                 ESchemaKey::LABEL            => 'Nome',
                 ESchemaKey::DESCRIPTION      => 'Name of the user',
                 ESchemaKey::POSITION         => $position++,
+            ],
+            self::NAME2             => [
+                ESchemaKey::TYPE        => EColumnType::STRING,
+                ESchemaKey::NOT_NULL    => TRUE,
+                ESchemaKey::LENGTH      => 255,
+                ESchemaKey::LABEL       => 'Nome',
+                ESchemaKey::DESCRIPTION => 'Name of the user',
+                ESchemaKey::POSITION    => $position++,
+                ESchemaKey::POSITION    => 3,
             ],
             self::EMAIL             => [
                 ESchemaKey::ONLY_DESCRIPTION => TRUE, // Schema does not manage

@@ -10,7 +10,11 @@ use Modules\AccessControl\app\Enums\{
 
 class Permission extends Model
 {
+    protected $table = 'permissions';
     use PermissionSchemeTrait;
+    
+    const SCHEME_SYNC_ACTIVED      = TRUE;
+    const SCHEME_SYNC_EDIT_ACTIVED = TRUE;
     
     static public function getAllTypes(): array
     {

@@ -17,31 +17,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use ReflectionClass;
+use function defined;
 
-
-/**
- * Classe responsável por atualizar o esquema de banco de dados de um modelo.
- *
- * Português
- * Atualiza o esquema de banco de dados de um modelo, incluindo adição, atualização e remoção de colunas,
- * além de verificar e aplicar restrições de chave estrangeira.
- *
- * Espanhol
- * Actualiza el esquema de base de datos de un modelo, incluyendo la adición, actualización y eliminación de columnas,
- * además de verificar y aplicar restricciones de clave foránea.
- *
- * Inglês
- * Updates the database schema of a model, including adding, updating, and removing columns,
- * as well as checking and applying foreign key constraints.
- *
- * Objetivos principais
- * - Gerenciar a atualização do esquema de banco de dados de um modelo.
- * - Adicionar, atualizar e remover colunas de acordo com o esquema definido.
- * - Verificar e aplicar restrições de chave estrangeira.
- *
- * @author Júnio de Almeida Vitorino <anarkaike@gmail.com>
- */
-class SchemaUpdater implements SchemaUpdaterInterface
+class SchemaSynchronizer implements SchemaUpdaterInterface
 {
     public function __construct(
         private ColumnBackupInterface      $columnBackup,
@@ -60,22 +38,28 @@ class SchemaUpdater implements SchemaUpdaterInterface
             $traits = $reflection->getTraitNames();
             
             if (!$this->shouldUpdateSchema($modelClass, $traits)) {
+                Log::info("Skipping schema update for model: $modelClass");
                 return;
             }
             
-            $schema = (new $modelClass)->getSchema();
+            $modelInstance = new $modelClass;
+            if (!method_exists($modelInstance, 'getSchema')) {
+                Log::warning("Method getSchema does not exist for model: $modelClass");
+                return;
+            }
+            
+            $schema = $modelInstance->getSchema();
             if (empty($schema)) {
                 Log::warning("Schema is empty for model: $modelClass");
                 return;
             }
             
             $tableName = Str::plural(Str::snake(class_basename($modelClass)));
+            Log::info("Determined table name: $tableName for model: $modelClass");
+            
             $existingColumns = $this->getExistingColumns($tableName);
-            
-            $this->backupAndDropOldColumns($tableName, $schema, $existingColumns);
-            $this->updateTableSchema($tableName, $schema, $existingColumns, $modelClass);
-            
-            Log::info("Database schema update completed for model: $modelClass");
+            $this->verifyAndAdjustColumnOrder($modelClass, $tableName, $schema, $existingColumns);
+            $this->updateTableSchema($tableName, $schema, $modelClass);
         } catch ( Exception $e ) {
             Log::error("Error updating database schema for model: $modelClass - " . $e->getMessage());
             throw $e;
@@ -89,18 +73,17 @@ class SchemaUpdater implements SchemaUpdaterInterface
             return FALSE;
         }
         
-        $reflection = new ReflectionClass($modelClass);
-        if ($reflection->getParentClass() && $reflection->getParentClass()->getName() === 'App\\Models\\User') {
+        if (method_exists($modelClass, 'getParentClass') && $modelClass::getParentClass()->getName() === 'App\\Models\\User') {
             return FALSE;
         }
         
-        return $this->usesUserSchemeTrait($traits);
+        return $this->usesSchemeTrait($traits);
     }
     
-    private function usesUserSchemeTrait(array $traits): bool
+    private function usesSchemeTrait(array $traits): bool
     {
         foreach ($traits as $trait) {
-            if (Str::endsWith($trait, 'UserSchemeTrait')) {
+            if (Str::endsWith($trait, 'SchemeTrait')) {
                 return TRUE;
             }
         }
@@ -110,6 +93,12 @@ class SchemaUpdater implements SchemaUpdaterInterface
     private function getExistingColumns(string $tableName): array
     {
         try {
+            // Check if the table already exists
+            if (!Schema::hasTable($tableName)) {
+                Log::warning("Table $tableName does not exist");
+                return [];
+            }
+            
             Log::info("Fetching existing columns for table: $tableName");
             $columns = DB::select("SHOW COLUMNS FROM $tableName");
             return array_map(
@@ -148,17 +137,33 @@ class SchemaUpdater implements SchemaUpdaterInterface
         }
     }
     
-    private function updateTableSchema(string $tableName, array $schema, array $existingColumns, string $modelClass): void
+    private function updateTableSchema(string $tableName, array $schema, string $modelClass): void
     {
         try {
             Log::info("Updating table schema for table: $tableName");
+            
+            // Check if the table already exists
+            if (Schema::hasTable($tableName)) {
+                Log::info("Table $tableName already exists. Skipping creation.");
+                return;
+            }
+            
             $definitionBuilder = new SchemaDefinitionBuilder();
             
-            $editColumnsEnabled = defined("$modelClass::SCHEME_SYNC_EDIT_ACTIVED") && $modelClass::SCHEME_SYNC_EDIT_ACTIVED;
+            // Fetch existing columns
+            $existingColumns = $this->getExistingColumns($tableName);
             
-            Schema::table(
+            // Backup the existing data
+            $backupTableName = $tableName . '_backup_' . Str::random(5);
+            Schema::rename($tableName, $backupTableName);
+            
+            // Start a transaction
+            DB::beginTransaction();
+            
+            // Create a new table with the updated schema
+            Schema::create(
                 $tableName,
-                function (Blueprint $table) use ($schema, $definitionBuilder, $existingColumns, $tableName, $editColumnsEnabled)
+                function (Blueprint $table) use ($tableName, $existingColumns, $schema, $definitionBuilder)
                 {
                     uasort(
                         $schema,
@@ -170,17 +175,29 @@ class SchemaUpdater implements SchemaUpdaterInterface
                     
                     foreach ($schema as $column => $definition) {
                         $definitionString = $definitionBuilder->buildColumnDefinition($definition);
-                        $foreignKey = $definitionBuilder->buildForeignKeyDefinition($definition, $column);
                         
                         if (in_array($column, $existingColumns)) {
-                            if ($editColumnsEnabled && !$this->shouldSkipColumnUpdate($tableName, $column, $definition)) {
-                                $this->columnManager->updateColumn($table, $column, $definitionString, $definition);
+                            if ($this->shouldSkipColumnUpdate($tableName, $column, $definition)) {
+                                continue;
                             }
+                            
+                            $this->columnManager->updateColumn($table, $column, $definitionString, $definition);
                         }
                         else {
-                            $this->columnManager->addColumn($table, $column, $definitionString, $definition);
+                            $afterColumn = $definition[ ESchemaKey::AFTER ] ?? NULL;
+                            $this->columnManager->addColumn($table, $column, $definitionString, $definition, $afterColumn);
                         }
-                        
+                    }
+                },
+            );
+            
+            // Add foreign keys after creating the columns
+            Schema::table(
+                $tableName,
+                function (Blueprint $table) use ($schema, $definitionBuilder, $tableName)
+                {
+                    foreach ($schema as $column => $definition) {
+                        $foreignKey = $definitionBuilder->buildForeignKeyDefinition($definition, $column);
                         if ($foreignKey) {
                             try {
                                 $this->addForeignKey($table, $column, $foreignKey);
@@ -192,11 +209,21 @@ class SchemaUpdater implements SchemaUpdaterInterface
                     }
                 },
             );
+            
+            // Commit the transaction
+            DB::commit();
+            
+            // Drop the backup table
+            Schema::drop($backupTableName);
         } catch ( Exception $e ) {
+            // Rollback the transaction in case of any errors
+            DB::rollBack();
+            
             Log::error("Error updating table schema for table: $tableName - " . $e->getMessage());
             throw $e;
         }
     }
+    
     
     private function shouldSkipColumnUpdate(string $tableName, string $column, array $definition): bool
     {
@@ -228,58 +255,125 @@ class SchemaUpdater implements SchemaUpdaterInterface
         }
     }
     
-    private function foreignKeyCanBeAdded(string $referencedTable, string $referencedColumn, string $currentTable, string $currentColumn): bool
+    private function verifyAndAdjustColumnOrder(string $modelClass, string $tableName, array $schema, array $existingColumns)
     {
-        // Verificar se a tabela referenciada e a coluna existem
-        if (!Schema::hasTable($referencedTable) || !Schema::hasColumn($referencedTable, $referencedColumn)) {
-            Log::error("Referenced table `$referencedTable` or column `$referencedColumn` does not exist.");
-            return false;
+        if (!defined("$modelClass::ALLOW_RECREATE_TABLE_IN_ORDER") || !$modelClass::ALLOW_RECREATE_TABLE_IN_ORDER) {
+            Log::info("Recreating table in order is not allowed. Skipping column order adjustment for table: $tableName");
+            return;
         }
         
-        // Verificar se a tabela atual e a coluna existem
-        if (!Schema::hasTable($currentTable) || !Schema::hasColumn($currentTable, $currentColumn)) {
-            Log::error("Current table `$currentTable` or column `$currentColumn` does not exist.");
-            return false;
+        Log::info("Verifying and adjusting column order for table: $tableName");
+        
+        $schemaColumns = array_keys($schema);
+        
+        if ($existingColumns === $schemaColumns) {
+            Log::info("Column order is correct for table: $tableName");
+            return;
         }
         
-        // Verificar compatibilidade dos tipos de dados
-        $referencedColumnData = DB::select("SHOW COLUMNS FROM $referencedTable LIKE '$referencedColumn'");
-        $currentColumnData = DB::select("SHOW COLUMNS FROM $currentTable LIKE '$currentColumn'");
+        Log::info("Column order is incorrect for table: $tableName. Adjusting...");
         
-        if (empty($referencedColumnData) || empty($currentColumnData)) {
-            Log::error("Column data for referenced column `$referencedColumn` or current column `$currentColumn` could not be fetched.");
-            return false;
+        // Create a temporary table with a unique name
+        $tempTableName = $tableName . '_temp_' . Str::random(5);
+        
+        // Copy data from the original table to the temporary table
+        Schema::create(
+            $tempTableName,
+            function (Blueprint $table) use ($schema)
+            {
+                foreach ($schema as $column => $definition) {
+                    $this->schemaInterpreter->applyColumnType($table, $column, $definition[ ESchemaKey::TYPE ], $definition);
+                }
+            },
+        );
+        
+        // Check if the original table exists before attempting to drop it
+        if (Schema::hasTable($tableName)) {
+            // Rename the original table to a backup name
+            $backupTableName = $tableName . '_backup_' . Str::random(5);
+            Schema::rename($tableName, $backupTableName);
+            
+            // Rename the temporary table to the original table name
+            Schema::rename($tempTableName, $tableName);
+            
+            // Drop the backup table
+            Schema::drop($backupTableName);
         }
-        
-        $referencedColumnType = $referencedColumnData[0]->Type;
-        $currentColumnType = $currentColumnData[0]->Type;
-        
-        Log::info("Referenced column type: $referencedColumnType, Current column type: $currentColumnType");
-        
-        if ($referencedColumnType !== $currentColumnType) {
-            Log::error("Incompatible data types between referenced column `$referencedColumn` ($referencedColumnType) and column `$currentColumn` ($currentColumnType).");
-            return false;
+        else {
+            // If the original table doesn't exist, just rename the temp table to the original name
+            Schema::rename($tempTableName, $tableName);
         }
-        
-        return true;
     }
     
+    
+    private function foreignKeyCanBeAdded(string $referencedTable, string $referencedColumn, string $currentTable, string $currentColumn): bool
+    {
+        try {
+            // Check if the referenced table exists
+            if (!Schema::hasTable($referencedTable)) {
+                Log::warning("Referenced table $referencedTable does not exist");
+                return FALSE;
+            }
+            
+            // Check if the referenced column exists in the referenced table
+            $referencedColumns = $this->getExistingColumns($referencedTable);
+            if (!in_array($referencedColumn, $referencedColumns)) {
+                Log::warning("Referenced column $referencedColumn does not exist in table $referencedTable");
+                return FALSE;
+            }
+            
+            // Check if the current column exists in the current table
+            $currentColumns = $this->getExistingColumns($currentTable);
+            if (!in_array($currentColumn, $currentColumns)) {
+                Log::warning("Current column $currentColumn does not exist in table $currentTable");
+                return FALSE;
+            }
+            
+            return TRUE;
+        } catch ( Exception $e ) {
+            Log::error("Error checking if foreign key can be added between tables $currentTable and $referencedTable - " . $e->getMessage());
+            throw $e;
+        }
+    }
+    
+    private function getExistingForeignKeys(string $tableName): array
+    {
+        try {
+            // Fetch existing foreign keys
+            $foreignKeys = DB::select(
+                "SELECT * FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_NAME = '$tableName' AND CONSTRAINT_SCHEMA = '" . config('database.connections.mysql.database') . "'",
+            );
+            
+            return array_map(
+                static function ($foreignKey)
+                {
+                    return [
+                        'REFERENCED_TABLE_NAME'  => $foreignKey->REFERENCED_TABLE_NAME,
+                        'REFERENCED_COLUMN_NAME' => $foreignKey->REFERENCED_COLUMN_NAME,
+                    ];
+                },
+                $foreignKeys,
+            );
+        } catch ( Exception $e ) {
+            Log::error("Error fetching existing foreign keys for table: $tableName - " . $e->getMessage());
+            throw $e;
+        }
+    }
     
     private function addForeignKey(Blueprint $table, string $column, array $foreignKey): void
     {
         try {
+            Log::info("Attempting to add foreign key on column: $column referencing table: {$foreignKey['table']} ({$foreignKey['references']})");
+            
             if (!$this->foreignKeyCanBeAdded($foreignKey['table'], $foreignKey['references'], $table->getTable(), $column)) {
                 throw new Exception("Cannot add foreign key on column `$column`. Referenced table or column does not exist or has incompatible type.");
             }
             
             Log::info("Adding foreign key on column: $column referencing table: {$foreignKey['table']} ({$foreignKey['references']}) with on delete action: {$foreignKey['on_delete']}");
             
-            // Adicionar valor padrão para "on_update" se não estiver definido
             $foreignKey['on_update'] = $foreignKey['on_update'] ?? 'NO ACTION';
-            
             $foreignKeyName = $table->getTable() . '_' . $column . '_foreign';
             
-            // Verificar se a chave estrangeira já existe
             $foreignKeys = DB::select(
                 "SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{$table->getTable()}' AND COLUMN_NAME = '{$column}'",
             );
@@ -307,7 +401,6 @@ class SchemaUpdater implements SchemaUpdaterInterface
             throw $exception;
         }
     }
-    
     
     private function handleForeignKeyException(QueryException $e, string $tableName, string $column, array $foreignKey): void
     {
