@@ -1,8 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Modules\Palette\app\Http\Controllers\PaletteController;
-
 /*
  *--------------------------------------------------------------------------
  * API Routes
@@ -13,10 +10,3 @@ use Modules\Palette\app\Http\Controllers\PaletteController;
  * is assigned the "api" middleware group. Enjoy building your API!
  *
 */
-
-Route::middleware(['auth:sanctum'])->prefix('v1')->group(
-    function ()
-    {
-        Route::apiResource('palette', PaletteController::class)->names('palette');
-    },
-);

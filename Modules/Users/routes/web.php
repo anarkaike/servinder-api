@@ -1,8 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Modules\Users\app\Http\Controllers\UsersController;
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -13,11 +10,3 @@ use Modules\Users\app\Http\Controllers\UsersController;
 | contains the "web" middleware group. Now create something great!
 |
 */
-
-Route::group(
-    [],
-    function ()
-    {
-//        Route::resource('users', UsersController::class)->names('users');
-    },
-);

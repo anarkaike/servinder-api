@@ -1,8 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Modules\Tenancy\app\Http\Controllers\TenancyController;
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -13,11 +10,3 @@ use Modules\Tenancy\app\Http\Controllers\TenancyController;
 | contains the "web" middleware group. Now create something great!
 |
 */
-
-Route::group(
-    [],
-    function ()
-    {
-        Route::resource('tenancy', TenancyController::class)->names('tenancy');
-    },
-);

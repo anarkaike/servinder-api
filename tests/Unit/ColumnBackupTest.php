@@ -3,12 +3,11 @@
 
 namespace Tests\Unit;
 
-use App\ModelSchemas\Commands\Drivers\ColumnBackup;
 use App\Helpers\Logger;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Mockery;
+use ModelSchemas\Commands\Drivers\ColumnBackup;
 use PHPUnit\Framework\TestCase;
 
 class ColumnBackupTest extends TestCase

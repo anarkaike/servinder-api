@@ -2,11 +2,11 @@
 
 namespace Modules\Users\app\Models;
 
-use App\ModelSchemas\Enums\EColumnType;
-use App\ModelSchemas\Enums\ESchemaKey;
-use App\ModelSchemas\Enums\ESchemaValue;
-use App\ModelSchemas\Helpers\SchemaHelper;
-use App\ModelSchemas\Traits\AddDefaultColumnsTrait;
+use ModelSchemas\Enums\EColumnType;
+use ModelSchemas\Enums\ESchemaKey;
+use ModelSchemas\Enums\ESchemaValue;
+use ModelSchemas\Helpers\SchemaHelper;
+use ModelSchemas\Traits\AddDefaultColumnsTrait;
 
 trait UserSchemeTrait
 {

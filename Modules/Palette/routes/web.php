@@ -1,8 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Modules\Palette\app\Http\Controllers\PaletteController;
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -13,11 +10,3 @@ use Modules\Palette\app\Http\Controllers\PaletteController;
 | contains the "web" middleware group. Now create something great!
 |
 */
-
-Route::group(
-    [],
-    function ()
-    {
-        Route::resource('palette', PaletteController::class)->names('palette');
-    },
-);

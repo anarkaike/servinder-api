@@ -1,8 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Modules\Financial\app\Http\Controllers\WalletController;
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -13,11 +10,3 @@ use Modules\Financial\app\Http\Controllers\WalletController;
 | contains the "web" middleware group. Now create something great!
 |
 */
-
-Route::group(
-    [],
-    function ()
-    {
-        Route::resource('financial', WalletController::class)->names('financial');
-    },
-);

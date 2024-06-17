@@ -1,8 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Modules\AccessControl\app\Http\Controllers\Permissions;
-
 /*
  *--------------------------------------------------------------------------
  * API Routes
@@ -13,10 +10,3 @@ use Modules\AccessControl\app\Http\Controllers\Permissions;
  * is assigned the "api" middleware group. Enjoy building your API!
  *
 */
-
-Route::middleware(['auth:sanctum'])->prefix('v1')->group(
-    function ()
-    {
-        Route::apiResource('accesscontrol', Permissions::class)->names('accesscontrol');
-    },
-);

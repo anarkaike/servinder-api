@@ -2,9 +2,9 @@
 
 namespace Modules\AccessControl\app\Policies;
 
+use Modules\AccessControl\app\Models\Permission;
+use Modules\Users\app\Models\User;
 use Orion\Concerns\HandlesAuthorization;
-use App\Http\Models\Permission;
-use App\Http\Models\User;
 
 class PermissionsPolicy
 {

@@ -2,8 +2,9 @@
 
 namespace App\Providers;
 
-use App\ModelSchemas\Commands\DbaCommand;
 use Illuminate\Support\ServiceProvider;
+use ModelSchemas\Commands\DbaCommand;
+use ModelSchemas\Commands\GenerateClassesCommand;
 
 class CommandsServiceProvider extends ServiceProvider
 {
@@ -39,6 +40,7 @@ class CommandsServiceProvider extends ServiceProvider
         $this->commands(
             [
                 DbaCommand::class,
+                GenerateClassesCommand::class,
                 // Adicione outros comandos conforme necessário
             ],
         );

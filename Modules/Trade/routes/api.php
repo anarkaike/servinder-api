@@ -1,8 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Modules\Trade\app\Http\Controllers\TradeController;
-
 /*
  *--------------------------------------------------------------------------
  * API Routes
@@ -13,10 +10,3 @@ use Modules\Trade\app\Http\Controllers\TradeController;
  * is assigned the "api" middleware group. Enjoy building your API!
  *
 */
-
-Route::middleware(['auth:sanctum'])->prefix('v1')->group(
-    function ()
-    {
-        Route::apiResource('trade', TradeController::class)->names('trade');
-    },
-);

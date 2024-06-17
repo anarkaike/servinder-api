@@ -1,8 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Modules\AccessControl\app\Http\Controllers\Permissions;
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -13,11 +10,3 @@ use Modules\AccessControl\app\Http\Controllers\Permissions;
 | contains the "web" middleware group. Now create something great!
 |
 */
-
-Route::group(
-    [],
-    function ()
-    {
-        Route::resource('accesscontrol', Permissions::class)->names('accesscontrol');
-    },
-);

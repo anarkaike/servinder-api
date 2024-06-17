@@ -3,17 +3,13 @@
 namespace Modules\Events\App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Modules\AccessControl\app\Models\Permission;
 
 class ActivityRequest extends FormRequest
 {
     public function rules()
     {
         return [
-//            'name'         => 'required|string|unique:permissions,name,' . $this->permission,
-//            'display_name' => 'required|string',
-//            'description'  => 'nullable|string',
-//            'type'         => 'required|string|in:' . implode(',', Permission::getAllTypes()),
+            // Validações
         ];
     }
     
@@ -27,10 +23,7 @@ class ActivityRequest extends FormRequest
         return [
             ...parent::messages(),
             ...[
-//            'name.unique'           => 'Já existe uma permissão com esse nome.',
-//            'name.required'         => 'O campo nome é obrigatório.',
-//            'display_name.required' => 'O campo nome de exibição é obrigatório.',
-//            'type.in'               => 'O tipo selecionado é inválido.',
+                // mensagns das validações
             ],
         ];
     }

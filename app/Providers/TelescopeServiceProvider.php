@@ -14,22 +14,27 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
      */
     public function register(): void
     {
-        // Telescope::night();
-
+        Telescope::night();
+        
         $this->hideSensitiveRequestDetails();
-
+        
         $isLocal = $this->app->environment('local');
-
-        Telescope::filter(function (IncomingEntry $entry) use ($isLocal) {
-            return $isLocal ||
-                   $entry->isReportableException() ||
-                   $entry->isFailedRequest() ||
-                   $entry->isFailedJob() ||
-                   $entry->isScheduledTask() ||
-                   $entry->hasMonitoredTag();
-        });
+        
+        Telescope::filter(
+            function (IncomingEntry $entry) use ($isLocal)
+            {
+                return $isLocal ||
+                       $entry->isReportableException() ||
+                       $entry->isFailedRequest() ||
+                       $entry->isFailedJob() ||
+                       $entry->isScheduledTask() ||
+                       $entry->hasMonitoredTag() ||
+                       $entry->type === 'query' || // Adiciona consultas
+                       $entry->type === 'model';   // Adiciona modelos
+            },
+        );
     }
-
+    
     /**
      * Prevent sensitive request details from being logged by Telescope.
      */
@@ -38,16 +43,18 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
         if ($this->app->environment('local')) {
             return;
         }
-
+        
         Telescope::hideRequestParameters(['_token']);
-
-        Telescope::hideRequestHeaders([
-            'cookie',
-            'x-csrf-token',
-            'x-xsrf-token',
-        ]);
+        
+        Telescope::hideRequestHeaders(
+            [
+                'cookie',
+                'x-csrf-token',
+                'x-xsrf-token',
+            ],
+        );
     }
-
+    
     /**
      * Register the Telescope gate.
      *
@@ -55,10 +62,17 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
      */
     protected function gate(): void
     {
-        Gate::define('viewTelescope', function ($user) {
-            return in_array($user->email, [
-                //
-            ]);
-        });
+        Gate::define(
+            'viewTelescope',
+            function ($user)
+            {
+                return in_array(
+                    $user->email,
+                    [
+                        //
+                    ],
+                );
+            },
+        );
     }
 }

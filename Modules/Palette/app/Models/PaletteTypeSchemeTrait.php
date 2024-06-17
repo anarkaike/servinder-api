@@ -2,9 +2,9 @@
 
 namespace Modules\Palette\app\Models;
 
-use App\ModelSchemas\Enums\EColumnType;
-use App\ModelSchemas\Enums\ESchemaKey;
-use App\ModelSchemas\Traits\AddDefaultColumnsTrait;
+use ModelSchemas\Enums\EColumnType;
+use ModelSchemas\Enums\ESchemaKey;
+use ModelSchemas\Traits\AddDefaultColumnsTrait;
 
 trait PaletteTypeSchemeTrait
 {
