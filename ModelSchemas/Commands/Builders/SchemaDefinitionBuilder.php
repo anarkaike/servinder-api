@@ -22,6 +22,11 @@ class SchemaDefinitionBuilder implements SchemaDefinitionBuilderInterface
         $this->addColumnUniqueness($columnParts, $definition);
         $this->addColumnDefault($columnParts, $definition);
         
+        // Adicionar AUTO_INCREMENT se estiver definido
+        if (isset($definition[ ESchemaKey::AUTO_INCREMENT ]) && $definition[ ESchemaKey::AUTO_INCREMENT ]) {
+            $columnParts[] = 'AUTO_INCREMENT';
+        }
+        
         return implode(' ', $columnParts);
     }
     

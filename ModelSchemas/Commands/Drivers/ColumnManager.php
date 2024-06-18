@@ -58,9 +58,6 @@ class ColumnManager implements ColumnManagerInterface
             else {
                 $this->schemaInterpreter->applyColumnType($table, $columnName, $columnType, $columnSchema);
             }
-            
-            // Restore column data if there's a backup
-            $this->restoreColumnDataIfNeeded($table->getTable(), $columnName);
         } catch ( Exception $exception ) {
             $this->logColumnAddError($table, $columnName, $exception);
             throw $exception;

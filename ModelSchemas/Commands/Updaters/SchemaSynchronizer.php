@@ -100,13 +100,10 @@ class SchemaSynchronizer implements SchemaUpdaterInterface
         
         // Extrair posições das colunas a partir do esquema
         foreach ($orderedColumns as $column) {
-            if (isset($schema[ $column ][ ESchemaKey::POSITION ])) {
-                $columnPositions[ $column ] = $schema[ $column ][ ESchemaKey::POSITION ];
+            if (isset($schema[$column][ESchemaKey::POSITION])) {
+                $columnPositions[$column] = $schema[$column][ESchemaKey::POSITION];
             }
         }
-        
-        // Ordenar colunas pela posição em ordem crescente
-        asort($columnPositions);
         
         // Mover a coluna `id` para ser a primeira coluna
         if (isset($columnPositions['id'])) {
@@ -114,27 +111,65 @@ class SchemaSynchronizer implements SchemaUpdaterInterface
             $columnPositions = ['id' => 0] + $columnPositions;
         }
         
+        // Ordenar colunas pela posição em ordem crescente
+        asort($columnPositions);
+        
         // Inicializar SchemaDefinitionBuilder
         $schemaDefinitionBuilder = new SchemaDefinitionBuilder();
         
         // Gerar comandos SQL para alterar a ordem das colunas
         $previousColumn = NULL;
         foreach ($columnPositions as $column => $position) {
-            if ($column !== 'id') {
-                $definitionString = $schemaDefinitionBuilder->buildColumnDefinition($schema[ $column ]);
-                $alterColumnSQL = "ALTER TABLE `$tableName` MODIFY `$column` $definitionString";
-                if ($previousColumn) {
-                    $alterColumnSQL .= " AFTER `$previousColumn`";
+            $definitionString = $schemaDefinitionBuilder->buildColumnDefinition($schema[$column]);
+            
+            // Verificar se a coluna já possui índice único
+            if (strpos($definitionString, 'UNIQUE') !== false) {
+                $indexes = DB::select("SHOW INDEX FROM `$tableName` WHERE Column_name = ?", [$column]);
+                $uniqueIndexExists = false;
+                foreach ($indexes as $index) {
+                    if ($index->Non_unique == 0) {
+                        $uniqueIndexExists = true;
+                        break;
+                    }
                 }
-                else {
-                    $alterColumnSQL .= ' FIRST';
+                if ($uniqueIndexExists) {
+                    $definitionString = str_replace('UNIQUE', '', $definitionString);
                 }
-                
-                DB::statement($alterColumnSQL);
-                $previousColumn = $column;
             }
+            
+            // Verificar se a coluna deve ser AUTO_INCREMENT e se já não é
+            if (isset($schema[$column][ESchemaKey::AUTO_INCREMENT]) && $schema[$column][ESchemaKey::AUTO_INCREMENT]) {
+                $columnDetails = DB::selectOne("SHOW COLUMNS FROM `$tableName` WHERE Field = ?", [$column]);
+                if (strpos($columnDetails->Extra, 'auto_increment') === false) {
+                    // Certificar-se de que a coluna AUTO_INCREMENT é uma chave primária
+                    $primaryKeys = DB::select("SHOW KEYS FROM `$tableName` WHERE Key_name = 'PRIMARY'");
+                    $isPrimaryKey = false;
+                    foreach ($primaryKeys as $key) {
+                        if ($key->Column_name === $column) {
+                            $isPrimaryKey = true;
+                            break;
+                        }
+                    }
+                    if (!$isPrimaryKey) {
+                        DB::statement("ALTER TABLE `$tableName` ADD PRIMARY KEY (`$column`)");
+                    }
+                    $definitionString .= ' AUTO_INCREMENT';
+                }
+            }
+            
+            $alterColumnSQL = "ALTER TABLE `$tableName` MODIFY `$column` $definitionString";
+            if ($previousColumn) {
+                $alterColumnSQL .= " AFTER `$previousColumn`";
+            } else {
+                $alterColumnSQL .= ' FIRST';
+            }
+            
+            DB::statement($alterColumnSQL);
+            $previousColumn = $column;
         }
     }
+    
+    
     
     private function createTablesWithoutFKs(array $schemas): void
     {
@@ -273,11 +308,15 @@ class SchemaSynchronizer implements SchemaUpdaterInterface
                             $this->columnManager->addColumn($table, $column, $definitionString, $definition, $afterColumn);
                         },
                     );
+                    // Restore column data if there's a backup
+                    $this->columnManager->restoreColumnDataIfNeeded($tableName, $column);
                 }
             }
             
             // Adicionar chaves estrangeiras após criar todas as colunas
             $this->columnManager->addForeignKeysToTables([$tableName => $schema]);
+            
+            
         } catch ( Exception $e ) {
             $this->logger->error("Error adding new columns for table: $tableName - " . $e->getMessage());
             throw $e;
