@@ -57,10 +57,5 @@ class DbaCommand extends Command implements DbaCommandInterface
             $this->info('Resetting the database...');
             Artisan::call('migrate:reset');
         }
-        
-        if ($this->option('migrate')) {
-            $this->info('Running migrations...');
-            Artisan::call('migrate');
-        }
     }
 }

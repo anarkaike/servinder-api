@@ -21,10 +21,10 @@ trait AddDefaultColumnsTrait
      *
      * @return array
      */
-    private function addDefaultColumns(array $schema, $position = 0): array
+    private function addDefaultColumns(array &$schema, $position = 0): array
     {
-        $schema = $this->addPrimaryKeyColumns($schema, $position);
-//        $schema = $this->addTenantIdColumns($schema, $position);
+        $schema = $this->addPrimaryKeyColumn($schema, $position);
+        $schema = $this->addTenantIdColumns($schema, $position);
         $schema = $this->addAuditColumns($schema, $position);
         
         return $schema;
@@ -37,17 +37,18 @@ trait AddDefaultColumnsTrait
      *
      * @return array
      */
-    private function addPrimaryKeyColumns(array $schema, &$position = 0): array
+    private function addPrimaryKeyColumn(array &$schema): void
     {
-        return [
+        $schema = [
             ...[
                 self::ID => [
-                    ESchemaKey::TYPE        => EColumnType::UNSIGNED_BIG_INTEGER,
-                    ESchemaKey::PRIMARY_KEY => TRUE,
-                    ESchemaKey::NOT_NULL    => TRUE,
-                    ESchemaKey::LABEL       => 'ID',
-                    ESchemaKey::DESCRIPTION => 'ID do registro.',
-                    ESchemaKey::POSITION    => $position++,
+                    ESchemaKey::TYPE           => EColumnType::UNSIGNED_BIG_INTEGER,
+                    ESchemaKey::PRIMARY_KEY    => TRUE,
+                    ESchemaKey::AUTO_INCREMENT => TRUE,
+                    ESchemaKey::NOT_NULL       => TRUE,
+                    ESchemaKey::LABEL          => 'ID',
+                    ESchemaKey::DESCRIPTION    => 'ID do registro.',
+                    ESchemaKey::POSITION       => 0,
                 ],
             ],
             ...$schema,
@@ -61,21 +62,21 @@ trait AddDefaultColumnsTrait
      *
      * @return array
      */
-    private function addTenantIdColumns(array $schema, &$position = 0): array
+    private function addTenantIdColumns(array &$schema): void
     {
-        return [
+        $schema = [
             ...[
                 self::TENANT_ID => [
-                    ESchemaKey::TYPE        => EColumnType::UNSIGNED_BIG_INTEGER,
+                    ESchemaKey::TYPE        => EColumnType::UNSIGNED_INTEGER,
                     ESchemaKey::NULLABLE    => TRUE,
                     ESchemaKey::LABEL       => 'Tenant ID',
                     ESchemaKey::DESCRIPTION => 'ID do Tenant.',
-                    ESchemaKey::POSITION    => $position++,
+                    ESchemaKey::POSITION    => 1,
                     ESchemaKey::ON          => [
                         ESchemaKey::ON_FK     => 'tenants',
                         ESchemaKey::ON_COLUMN => 'id',
-                        ESchemaKey::ON_DELETE => ESchemaValue::ON_NO_ACTON,
-                        ESchemaKey::ON_UPDATE => ESchemaValue::ON_NO_ACTON,
+                        ESchemaKey::ON_DELETE => ESchemaValue::ON_NO_ACTION,
+                        ESchemaKey::ON_UPDATE => ESchemaValue::ON_NO_ACTION,
                     ],
                 ],
             ],

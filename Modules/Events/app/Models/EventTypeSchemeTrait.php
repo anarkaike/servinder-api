@@ -12,16 +12,23 @@ trait EventTypeSchemeTrait
     
     public function getSchema(): array
     {
-        $schema = [
+        $schema = [];
+        $this->addPrimaryKeyColumn($schema);
+        $this->addTenantIdColumns($schema);
+        $position = 2;
+        $schema = [...$schema, ...[
             'name' => [
                 ESchemaKey::TYPE        => EColumnType::STRING,
                 ESchemaKey::NOT_NULL    => TRUE,
                 ESchemaKey::LENGTH      => 255,
                 ESchemaKey::LABEL       => 'Nome',
                 ESchemaKey::DESCRIPTION => 'Name of the user',
+                ESchemaKey::POSITION    => $position++,
             ],
-        ];
+        ]];
         
-        return $this->addDefaultColumns($schema); // PK & Audit
+        $this->addAuditColumns($schema);
+        
+        return $schema;
     }
 }

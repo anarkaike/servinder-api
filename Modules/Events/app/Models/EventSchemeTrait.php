@@ -13,30 +13,25 @@ trait EventSchemeTrait
     const SCHEME_SYNC_ACTIVED      = TRUE;
     const SCHEME_SYNC_EDIT_ACTIVED = TRUE;
     
-    
     public function getSchema(): array
     {
-        return [
-            'id'          => [
-                ESchemaKey::TYPE           => EColumnType::BIG_INTEGER,
-                ESchemaKey::PRIMARY_KEY    => TRUE,
-                ESchemaKey::NOT_NULL       => TRUE,
-                ESchemaKey::AUTO_INCREMENT => TRUE,
-                ESchemaKey::PRIMARY_KEY    => TRUE,
-                ESchemaKey::POSITION       => 1,
+        $schema = [];
+        $this->addPrimaryKeyColumn($schema);
+        $this->addTenantIdColumns($schema);
+        $position = 2;
+        $schema = [...$schema, ...[
+            'name' => [
+                ESchemaKey::TYPE        => EColumnType::STRING,
+                ESchemaKey::NOT_NULL    => TRUE,
+                ESchemaKey::LENGTH      => 255,
+                ESchemaKey::LABEL       => 'Nome',
+                ESchemaKey::DESCRIPTION => 'Name of the user',
+                ESchemaKey::POSITION    => $position++,
             ],
-            'name'        => [
-                ESchemaKey::TYPE     => EColumnType::STRING,
-                ESchemaKey::NOT_NULL => TRUE,
-                ESchemaKey::LENGTH   => 255,
-                ESchemaKey::POSITION => 2,
-            ],
-            'description' => [
-                ESchemaKey::TYPE     => EColumnType::STRING,
-                ESchemaKey::NOT_NULL => TRUE,
-                ESchemaKey::LENGTH   => 255,
-                ESchemaKey::POSITION => 2,
-            ],
-        ];
+        ]];
+        
+        $this->addAuditColumns($schema);
+        
+        return $schema;
     }
 }

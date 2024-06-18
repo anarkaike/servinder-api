@@ -116,6 +116,17 @@ class SchemaInterpreter implements SchemaInterpreterInterface
             if ($afterColumn) {
                 $columnInstance->after($afterColumn);
             }
+            
+            if (isset($definition[ ESchemaKey::ON ])) {
+                $foreignKey = $definition[ ESchemaKey::ON ];
+
+//                dd($foreignKey, $column, $foreignKey[ ESchemaKey::ON_COLUMN ], $foreignKey[ ESchemaKey::ON_DELETE ] ?? 'RESTRICT', $foreignKey[ ESchemaKey::ON_UPDATE ] ?? 'RESTRICT');
+                $table->foreign($column)
+                      ->references($foreignKey[ ESchemaKey::ON_COLUMN ])
+                      ->on($foreignKey[ ESchemaKey::ON_FK ])
+                      ->onDelete($foreignKey[ ESchemaKey::ON_DELETE ] ?? 'RESTRICT')
+                      ->onUpdate($foreignKey[ ESchemaKey::ON_UPDATE ] ?? 'RESTRICT');
+            }
         }
         else {
             throw new Exception("Unsupported column type: $type");

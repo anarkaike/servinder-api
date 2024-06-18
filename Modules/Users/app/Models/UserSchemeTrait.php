@@ -2,11 +2,13 @@
 
 namespace Modules\Users\app\Models;
 
+use Illuminate\Support\Str;
 use ModelSchemas\Enums\EColumnType;
 use ModelSchemas\Enums\ESchemaKey;
 use ModelSchemas\Enums\ESchemaValue;
 use ModelSchemas\Helpers\SchemaHelper;
 use ModelSchemas\Traits\AddDefaultColumnsTrait;
+use Modules\Events\app\Models\Event;
 
 trait UserSchemeTrait
 {
@@ -22,18 +24,25 @@ trait UserSchemeTrait
     
     public function getSchema(): array
     {
-        $position = 1;
-        $schema = [
-            self::PARENT_ID         => [
-                ESchemaKey::TYPE     => EColumnType::UNSIGNED_BIG_INTEGER,
-                ESchemaKey::NULLABLE => TRUE,
-                ESchemaKey::POSITION => 4,
-                ESchemaKey::ON       => [
-                    ESchemaKey::ON_FK     => SchemaHelper::table(User::class),
-                    ESchemaKey::ON_COLUMN => 'id',
-                    ESchemaKey::ON_DELETE => ESchemaValue::ON_NO_ACTION,
-                    ESchemaKey::ON_UPDATE => ESchemaValue::ON_NO_ACTION,
-                ],
+        $schema = [];
+        $this->addPrimaryKeyColumn($schema);
+        $this->addTenantIdColumns($schema);
+        $position = 2;
+        $schema = [...$schema, ...[
+            self::EMAIL             => [
+                ESchemaKey::ONLY_DESCRIPTION => TRUE, // Schema does not manage
+                ESchemaKey::TYPE             => EColumnType::STRING,
+                ESchemaKey::LENGTH           => 255,
+                ESchemaKey::UNIQUE           => TRUE,
+                ESchemaKey::DESCRIPTION      => 'Email address of the user',
+                ESchemaKey::POSITION         => $position++,//
+            ],
+            self::EMAIL_VERIFIED_AT => [
+                ESchemaKey::ONLY_DESCRIPTION => TRUE, // Schema does not manage
+                ESchemaKey::TYPE             => EColumnType::TIMESTAMP,
+                ESchemaKey::NULLABLE         => TRUE,
+                ESchemaKey::DESCRIPTION      => 'Email verification timestamp',
+                ESchemaKey::POSITION         => $position++,
             ],
             self::NAME              => [
                 ESchemaKey::ONLY_DESCRIPTION => TRUE, // Schema does not manage
@@ -44,28 +53,16 @@ trait UserSchemeTrait
                 ESchemaKey::DESCRIPTION      => 'Name of the user',
                 ESchemaKey::POSITION         => $position++,
             ],
-            self::NAME2             => [
-                ESchemaKey::TYPE        => EColumnType::STRING,
-                ESchemaKey::NOT_NULL    => TRUE,
-                ESchemaKey::LENGTH      => 255,
-                ESchemaKey::LABEL       => 'Nome',
-                ESchemaKey::DESCRIPTION => 'Name of the user',
-                ESchemaKey::POSITION    => 6,
-            ],
-            self::EMAIL             => [
-                ESchemaKey::ONLY_DESCRIPTION => TRUE, // Schema does not manage
-                ESchemaKey::TYPE             => EColumnType::STRING,
-                ESchemaKey::LENGTH           => 255,
-                ESchemaKey::UNIQUE           => TRUE,
-                ESchemaKey::DESCRIPTION      => 'Email address of the user',
-                ESchemaKey::POSITION         => $position++,
-            ],
-            self::EMAIL_VERIFIED_AT => [
-                ESchemaKey::ONLY_DESCRIPTION => TRUE, // Schema does not manage
-                ESchemaKey::TYPE             => EColumnType::TIMESTAMP,
-                ESchemaKey::NULLABLE         => TRUE,
-                ESchemaKey::DESCRIPTION      => 'Email verification timestamp',
-                ESchemaKey::POSITION         => $position++,
+            self::PARENT_ID         => [
+                ESchemaKey::TYPE     => EColumnType::UNSIGNED_INTEGER,
+                ESchemaKey::NULLABLE => TRUE,
+                ESchemaKey::POSITION => 4,
+                ESchemaKey::ON       => [
+                    ESchemaKey::ON_FK     => SchemaHelper::table(Event::class),
+                    ESchemaKey::ON_COLUMN => 'id',
+                    ESchemaKey::ON_DELETE => ESchemaValue::ON_NO_ACTION,
+                    ESchemaKey::ON_UPDATE => ESchemaValue::ON_NO_ACTION,
+                ],
             ],
             self::PASSWORD          => [
                 ESchemaKey::ONLY_DESCRIPTION => TRUE, // Schema does not manage
@@ -93,8 +90,10 @@ trait UserSchemeTrait
                 ESchemaKey::DESCRIPTION      => 'Quando o registro foi atualizado por ultima vez.',
                 ESchemaKey::POSITION         => $position++,
             ],
-        ];
+        ]];
         
-        return $this->addDefaultColumns($schema, $position); // PK & Audit
+        $this->addAuditColumns($schema, $position);
+        
+        return $schema;
     }
 }

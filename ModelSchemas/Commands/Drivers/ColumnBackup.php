@@ -1,5 +1,4 @@
 <?php
-// ColumnBackup.php
 
 namespace ModelSchemas\Commands\Drivers;
 
@@ -39,6 +38,12 @@ class ColumnBackup implements ColumnBackupInterface
     
     protected function fetchColumnData(string $tableName, string $column): string
     {
+        if (!Schema::hasTable($tableName)) {
+            throw new Exception("Table $tableName does not exist");
+        }
+        if (!Schema::hasColumn($tableName, $column)) {
+            throw new Exception("Column $column does not exist in table $tableName");
+        }
         return DB::table($tableName)->pluck($column, 'id')->toJson();
     }
     

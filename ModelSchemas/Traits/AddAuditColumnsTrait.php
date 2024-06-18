@@ -15,9 +15,9 @@ trait AddAuditColumnsTrait
     const DELETED_AT = 'deleted_at';
     const DELETED_BY = 'deleted_by';
     
-    private function addAuditColumns(array $schema, &$position = 0): array
+    private function addAuditColumns(array &$schema, $position = 9999999): void
     {
-        return [
+        $schema = [
             ...$schema,
             ...[
                 self::CREATED_AT => [
@@ -60,7 +60,7 @@ trait AddAuditColumnsTrait
                 self::DELETED_BY => [
                     ESchemaKey::TYPE        => EColumnType::BIG_INTEGER,
                     ESchemaKey::DESCRIPTION => 'Por quem o registro foi excluido.',
-                    ESchemaKey::POSITION    => $position++,
+                    ESchemaKey::POSITION    => $position,
                     //                    SchemaKey::ON          => [
                     //                        SchemaKey::ON_FK     => SchemaHelper::table(User::class),
                     //                        SchemaKey::ON_COLUMN => 'id',

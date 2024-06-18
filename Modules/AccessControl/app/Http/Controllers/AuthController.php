@@ -2,38 +2,29 @@
 
 namespace Modules\AccessControl\app\Http\Controllers;
 
-use Modules\AccessControl\app\{
-    Collections\PermissionsCollection,
-    Http\Requests\PermissionRequest,
-    Models\Permission,
-    Policies\PermissionsPolicy,
-    Resources\PermissionResource,
-};
+namespace App\Http\Controllers;
 
-class PermissionsController extends Controller
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class AuthController extends Controller
 {
-    /**
-     * Fully-qualified model class name
-     */
-    protected $model = Permission::class;
-    /**
-     * @var string $policy
-     */
-    protected string $policy = PermissionsPolicy::class;
-    
-    /**
-     * @var string $request
-     */
-    protected $request = PermissionRequest::class;
-    
-    /**
-     * @var string $resource
-     */
-    protected $resource = PermissionResource::class;
-    
-    /**
-     * @var string $collectionResource
-     */
-    protected $collectionResource = PermissionsCollection::class;
-    
+    public function login(Request $request)
+    {
+        $credentials = $request->only('email', 'password');
+        
+        if (Auth::attempt($credentials)) {
+            $user = Auth::user();
+            $token = $user->createToken('auth_token')->plainTextToken;
+            
+            return response()->json(
+                [
+                    'access_token' => $token,
+                    'token_type'   => 'Bearer',
+                ],
+            );
+        }
+        
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
 }

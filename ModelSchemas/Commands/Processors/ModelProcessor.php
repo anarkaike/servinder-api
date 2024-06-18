@@ -13,7 +13,6 @@ use ModelSchemas\Commands\Updaters\SchemaSynchronizer;
 
 class ModelProcessor implements ModelProcessorInterface
 {
-    
     public function __construct(
         private ColumnBackupInterface      $columnBackup,
         private ColumnManagerInterface     $columnManager,
@@ -28,6 +27,7 @@ class ModelProcessor implements ModelProcessorInterface
     public function processModels(string $path): void
     {
         if (!$this->directoryExists($path)) {
+            $this->logger->log("Directory does not exist: $path");
             return;
         }
         

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Console\Commands\MigrationGenerateCommand;
 use Illuminate\Support\ServiceProvider;
 use ModelSchemas\Commands\DbaCommand;
 use ModelSchemas\Commands\GenerateClassesCommand;

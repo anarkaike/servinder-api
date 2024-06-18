@@ -1,33 +1,30 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ModelSchemas\Commands\Builders;
 
 use ModelSchemas\Commands\Contracts\SchemaDefinitionBuilderInterface;
 use ModelSchemas\Enums\ESchemaKey;
+use function implode;
+use function str_contains;
 
-/**
- * Classe responsável por construir definições de esquema de banco de dados.
- */
 class SchemaDefinitionBuilder implements SchemaDefinitionBuilderInterface
 {
-    /**
-     * Constrói uma definição de coluna a partir de um array de definições.
-     */
     public function buildColumnDefinition(array $definition): string
     {
         $columnParts = [];
         
         $this->addColumnType($columnParts, $definition);
         $this->addColumnLength($columnParts, $definition);
+        $this->addColumnPrecisionAndScale($columnParts, $definition);
         $this->addColumnNullability($columnParts, $definition);
         $this->addColumnUniqueness($columnParts, $definition);
+        $this->addColumnDefault($columnParts, $definition);
         
         return implode(' ', $columnParts);
     }
     
-    /**
-     * Constrói uma definição de chave estrangeira a partir de um array de definições.
-     */
     public function buildForeignKeyDefinition(array $definition, string $column): ?array
     {
         if (!isset($definition[ ESchemaKey::ON ])) {
@@ -35,38 +32,94 @@ class SchemaDefinitionBuilder implements SchemaDefinitionBuilderInterface
         }
         
         return [
-            'table'      => $definition[ ESchemaKey::ON ]['table'],
-            'references' => $definition[ ESchemaKey::ON ]['references'],
-            'on_delete'  => strtoupper($definition[ ESchemaKey::ON ]['on_delete'] ?? 'RESTRICT'),
+            'foreign_table' => $definition[ ESchemaKey::ON ]['table'],
+            'references'    => $definition[ ESchemaKey::ON ]['references'],
+            'on'            => $column,
+            'onDelete'      => strtoupper($definition[ ESchemaKey::ON ]['on_delete'] ?? 'RESTRICT'),
         ];
     }
     
-    /**
-     * Mapeia um tipo de coluna para seu equivalente no banco de dados.
-     */
-    protected function mapColumnType(string $type): string
+    
+    protected function mapColumnType(string $type, ?int $length = NULL): string
     {
         $typeMapping = [
-            'unsignedBigInteger' => 'BIGINT UNSIGNED',
+            'increments'           => 'INT AUTO_INCREMENT PRIMARY KEY',
+            'bigIncrements'        => 'BIGINT AUTO_INCREMENT PRIMARY KEY',
+            'smallIncrements'      => 'SMALLINT AUTO_INCREMENT PRIMARY KEY',
+            'tinyIncrements'       => 'TINYINT AUTO_INCREMENT PRIMARY KEY',
+            'integer'              => 'INT',
+            'bigInteger'           => 'BIGINT',
+            'smallInteger'         => 'SMALLINT',
+            'tinyInteger'          => 'TINYINT',
+            'unsignedInteger'      => 'INT UNSIGNED',
+            'unsignedBigInteger'   => 'BIGINT UNSIGNED',
+            'unsignedSmallInteger' => 'SMALLINT UNSIGNED',
+            'unsignedTinyInteger'  => 'TINYINT UNSIGNED',
+            'char'                 => 'CHAR',
+            'string'               => 'VARCHAR',
+            'text'                 => 'TEXT',
+            'mediumText'           => 'MEDIUMTEXT',
+            'longText'             => 'LONGTEXT',
+            'binary'               => 'BLOB',
+            'boolean'              => 'TINYINT(1)',
+            'date'                 => 'DATE',
+            'datetime'             => 'DATETIME',
+            'datetimeTz'           => 'DATETIME',
+            'time'                 => 'TIME',
+            'timeTz'               => 'TIME',
+            'timestamp'            => 'TIMESTAMP',
+            'timestampTz'          => 'TIMESTAMP',
+            'year'                 => 'YEAR',
+            'json'                 => 'JSON',
+            'jsonb'                => 'JSON',
+            'uuid'                 => 'CHAR(36)',
+            'ipAddress'            => 'VARCHAR(45)',
+            'macAddress'           => 'VARCHAR(17)',
+            'geometry'             => 'GEOMETRY',
+            'point'                => 'POINT',
+            'linestring'           => 'LINESTRING',
+            'polygon'              => 'POLYGON',
+            'multipoint'           => 'MULTIPOINT',
+            'multilinestring'      => 'MULTILINESTRING',
+            'multipolygon'         => 'MULTIPOLYGON',
+            'geometrycollection'   => 'GEOMETRYCOLLECTION',
+            'enum'                 => 'ENUM',
+            'set'                  => 'SET',
+            'double'               => 'DOUBLE',
+            'float'                => 'FLOAT',
+            'decimal'              => 'DECIMAL',
+            'unsignedDecimal'      => 'DECIMAL UNSIGNED',
+            'rememberToken'        => 'VARCHAR(100)',
             // Adicione outros mapeamentos de tipo conforme necessário
         ];
         
-        return $typeMapping[ $type ] ?? $type;
+        $mappedType = $typeMapping[ $type ] ?? $type;
+        if ($length !== NULL && !str_contains($mappedType, '(') && in_array($type, ['char', 'string', 'varchar'])) {
+            $mappedType .= "($length)";
+        }
+        
+        return $mappedType;
     }
-    
-    // Métodos privados para adicionar partes à definição de coluna
     
     private function addColumnType(array &$parts, array $definition): void
     {
         if (array_key_exists(ESchemaKey::TYPE, $definition)) {
-            $parts[] = $this->mapColumnType(type: $definition[ ESchemaKey::TYPE ]);
+            $length = array_key_exists(ESchemaKey::LENGTH, $definition) ? $definition[ ESchemaKey::LENGTH ] : NULL;
+            $parts[] = $this->mapColumnType($definition[ ESchemaKey::TYPE ], $length);
         }
     }
     
     private function addColumnLength(array &$parts, array $definition): void
     {
-        if (array_key_exists(ESchemaKey::LENGTH, $definition)) {
+        if (!str_contains(implode('', $parts), '(') && array_key_exists(ESchemaKey::LENGTH, $definition)) {
             $parts[] = "({$definition[ESchemaKey::LENGTH]})";
+        }
+    }
+    
+    private function addColumnPrecisionAndScale(array &$parts, array $definition): void
+    {
+        if (array_key_exists(ESchemaKey::PRECISION, $definition) && array_key_exists(ESchemaKey::SCALE, $definition)) {
+            $parts[] = "({$definition[ESchemaKey::PRECISION]}, {$definition[ESchemaKey::SCALE]})";
         }
     }
     
@@ -81,6 +134,13 @@ class SchemaDefinitionBuilder implements SchemaDefinitionBuilderInterface
     {
         if (array_key_exists(ESchemaKey::UNIQUE, $definition) && $definition[ ESchemaKey::UNIQUE ] === TRUE) {
             $parts[] = 'UNIQUE';
+        }
+    }
+    
+    private function addColumnDefault(array &$parts, array $definition): void
+    {
+        if (array_key_exists(ESchemaKey::DEFAULT, $definition)) {
+            $parts[] = "DEFAULT '{$definition[ESchemaKey::DEFAULT]}'";
         }
     }
 }
