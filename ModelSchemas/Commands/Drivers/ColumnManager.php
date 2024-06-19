@@ -4,6 +4,7 @@ namespace ModelSchemas\Commands\Drivers;
 
 use App\Helpers\Logger;
 use Exception;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -28,6 +29,7 @@ class ColumnManager implements ColumnManagerInterface
         $this->logger = $logger;
     }
     
+    
     public function updateColumn(Blueprint $table, string $columnName, string $columnDefinition, array $columnSchema): void
     {
         try {
@@ -44,6 +46,21 @@ class ColumnManager implements ColumnManagerInterface
             $this->logColumnUpdateError($table, $columnName, $exception);
             throw $exception;
         }
+    }
+    
+    public function addPrimaryKeys(Blueprint $table, array $schema): void
+    {
+        $definitionBuilder = new SchemaDefinitionBuilder();
+        $primaryKeys = $definitionBuilder->buildPrimaryKeyDefinition($schema);
+        if ($primaryKeys) {
+            $definitionBuilder->buildTablePrimaryKeys($table, $primaryKeys);
+        }
+    }
+    
+    private function addCompositePrimaryKey(Blueprint $table, array $columnSchema): void
+    {
+        $definitionBuilder = new SchemaDefinitionBuilder();
+        $definitionBuilder->buildTablePrimaryKeys($table, $columnSchema);
     }
     
     public function addColumn(Blueprint $table, string $columnName, string $columnDefinition, array $columnSchema, ?string $afterColumn = NULL): void
@@ -73,21 +90,24 @@ class ColumnManager implements ColumnManagerInterface
                 {
                     $definitionBuilder = new SchemaDefinitionBuilder();
                     foreach ($schema as $column => $definition) {
-                        if (!isset($definition[ESchemaKey::ON])) {
+                        if (!isset($definition[ ESchemaKey::ON ])) {
                             continue; // Ignorar colunas sem FKs
                         }
                         
                         $foreignKey = $definitionBuilder->buildForeignKeyDefinition($definition, $column);
                         $existingForeignKey = $this->getExistingForeignKey($tableName, $column);
                         
-                        if (!$existingForeignKey && $this->foreignKeyCanBeAdded(
+                        if (
+                            !$existingForeignKey && $this->foreignKeyCanBeAdded(
                                 $foreignKey['foreign_table'],
                                 $foreignKey['references'],
                                 $tableName,
-                                $column
-                            )) {
+                                $column,
+                            )
+                        ) {
                             $this->addForeignKey($table, $column, $foreignKey);
-                        } else {
+                        }
+                        else {
                             $this->logger->log("Foreign key on column $column in table $tableName cannot be added or already exists. Skipping addition.");
                         }
                     }
@@ -175,40 +195,50 @@ class ColumnManager implements ColumnManagerInterface
             [$tableName, $columnName, config('database.connections.mysql.database')],
         );
         
-        if ($foreignKey) {
+        if ($foreignKey && $this->hasExactForeignKey($tableName, $columnName, $foreignKey->constraint_name)) {
             Schema::table(
                 $tableName,
                 function (Blueprint $table) use ($foreignKey, $tableName, $columnName)
                 {
                     if ($foreignKey->constraint_name === 'PRIMARY') {
-                        // Avoid dropping primary key if it's the only auto-increment column
+                        // Evitar remover a chave primária se for a única coluna auto-incremento
                         if ($this->isAutoIncrementColumn($tableName, $columnName)) {
                             return;
                         }
                         $table->dropPrimary([$columnName]);
                     }
                     else {
-                        $table->dropForeign([$columnName]);
+                        $table->dropForeign([str_replace([$table->getTable() . '_', '_foreign'], '', $foreignKey->constraint_name)]);
                     }
                 },
             );
         }
     }
     
-    private function isAutoIncrementColumn(string $tableName, string $columnName): bool
+    private function hasExactForeignKey(string $tableName, string $columnName, string $constraintName): bool
     {
-        $column = DB::selectOne(
-            'SHOW COLUMNS FROM ' . $tableName . ' WHERE Field = ?',
-            [$columnName],
+        $foreignKey = DB::selectOne(
+            'SELECT constraint_name FROM information_schema . key_column_usage WHERE table_name = ? AND column_name = ? AND constraint_schema = ? AND constraint_name = ?',
+            [$tableName, $columnName, config('database . connections . mysql . database'), $constraintName],
         );
-        return strpos($column->Extra, 'auto_increment') !== FALSE;
+        
+        return !is_null($foreignKey);
+    }
+    
+    public function addUniqueConstraints(Blueprint $table, array $schema): void
+    {
+        $definitionBuilder = new SchemaDefinitionBuilder();
+        $uniqueConstraints = $definitionBuilder->buildUniqueConstraints($schema);
+        if ($uniqueConstraints) {
+            $definitionBuilder->buildTableUniqueConstraints($table, $uniqueConstraints);
+        }
     }
     
     public function hasForeignKey(string $tableName, string $columnName): bool
     {
         $foreignKeys = DB::select(
-            'SELECT constraint_name FROM information_schema.key_column_usage WHERE table_name = ? AND column_name = ? AND constraint_schema = ?',
-            [$tableName, $columnName, config('database.connections.mysql.database')],
+            'SELECT constraint_name FROM information_schema . key_column_usage WHERE table_name = ? AND column_name = ? AND constraint_schema = ?',
+            [$tableName, $columnName, config('database . connections . mysql . database')],
         );
         return count($foreignKeys) > 0;
     }
@@ -233,16 +263,47 @@ class ColumnManager implements ColumnManagerInterface
         $this->logger->error("Error adding column: $columnName to table: " . $table->getTable() . ' - ' . $exception->getMessage());
     }
     
+    
     protected function handleAutoIncrementColumn(Blueprint $table, string $columnName): void
     {
-        $existingPrimaryKeys = DB::select("SHOW KEYS FROM {$table->getTable()} WHERE Key_name = 'PRIMARY'");
-        if (count($existingPrimaryKeys) === 0) {
-            DB::statement("ALTER TABLE {$table->getTable()} MODIFY COLUMN $columnName INT AUTO_INCREMENT PRIMARY KEY");
-        }
-        else {
-            DB::statement("ALTER TABLE {$table->getTable()} MODIFY COLUMN $columnName INT AUTO_INCREMENT");
+        try {
+            if (Schema::hasColumn($table->getTable(), $columnName)) {
+                $existingPrimaryKey = DB::select("SHOW KEYS FROM {$table->getTable()} WHERE Key_name = 'PRIMARY'");
+                if ($existingPrimaryKey && $existingPrimaryKey[0]->Column_name == $columnName) {
+                    $this->logger->log("A coluna $columnName já é uma chave primária AUTO_INCREMENT. Nenhuma ação necessária.");
+                    return;
+                }
+                
+                $this->logger->log("Removendo chave primária e outros indices da coluna $columnName na tabela {$table->getTable()}");
+                Schema::table(
+                    $table->getTable(),
+                    function (Blueprint $table) use ($columnName)
+                    {
+                        $table->dropPrimary($columnName);
+                        
+                        // ... (código para remover chaves estrangeiras e índices)
+                    },
+                );
+                
+                $this->logger->log("Definindo $columnName como chave primária e AUTO_INCREMENT na tabela {$table->getTable()}");
+                DB::statement("ALTER TABLE {$table->getTable()} MODIFY COLUMN $columnName INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY");
+            }
+            else {
+                $this->logger->log("Adicionando a coluna $columnName como chave primária AUTO_INCREMENT na tabela {$table->getTable()}");
+                Schema::table(
+                    $table->getTable(),
+                    function (Blueprint $table) use ($columnName)
+                    {
+                        $table->unsignedInteger($columnName)->autoIncrement()->primary()->first();
+                    },
+                );
+            }
+        } catch ( QueryException $e ) {
+            $this->logger->error('Erro ao configurar a coluna AUTO_INCREMENT: ' . $e->getMessage());
+            throw $e;
         }
     }
+    
     
     protected function modifyColumn(Blueprint $table, string $columnName, array $columnSchema): void
     {

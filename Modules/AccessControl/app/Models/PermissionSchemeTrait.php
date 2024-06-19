@@ -16,16 +16,30 @@ trait PermissionSchemeTrait
         $this->addPrimaryKeyColumn($schema);
         $this->addTenantIdColumns($schema);
         $position = 2;
-        $schema = [...$schema, ...[
-            'name' => [
-                ESchemaKey::TYPE        => EColumnType::STRING,
-                ESchemaKey::NOT_NULL    => TRUE,
-                ESchemaKey::LENGTH      => 255,
-                ESchemaKey::LABEL       => 'Nome',
-                ESchemaKey::DESCRIPTION => 'Name of the user',
-                ESchemaKey::POSITION    => $position++,
+        $schema = [
+            ...$schema,
+            ...[
+                'name'       => [
+                    ESchemaKey::TYPE        => EColumnType::STRING,
+                    ESchemaKey::UNIQUE      => TRUE,
+                    ESchemaKey::NOT_NULL    => TRUE,
+                    ESchemaKey::LENGTH      => 255,
+                    ESchemaKey::LABEL       => 'Nome',
+                    ESchemaKey::DESCRIPTION => 'Name of the user',
+                    ESchemaKey::POSITION    => $position++,
+                ],
+                'guard_name' => [
+                    ESchemaKey::TYPE        => EColumnType::STRING,
+                    ESchemaKey::UNIQUE      => TRUE,
+                    ESchemaKey::NOT_NULL    => TRUE,
+                    ESchemaKey::LENGTH      => 255,
+                    ESchemaKey::LABEL       => 'Nome',
+                    ESchemaKey::DESCRIPTION => 'Name of the user',
+                    ESchemaKey::POSITION    => $position++,
+                ],
+                //                'primary_keys' => ['id', 'name', 'guard_name'],
             ],
-        ]];
+        ];
         
         $this->addAuditColumns($schema);
         

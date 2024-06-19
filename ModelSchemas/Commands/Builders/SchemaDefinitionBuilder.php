@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ModelSchemas\Commands\Builders;
 
+use Illuminate\Database\Schema\Blueprint;
 use ModelSchemas\Commands\Contracts\SchemaDefinitionBuilderInterface;
 use ModelSchemas\Enums\ESchemaKey;
 use function implode;
@@ -23,11 +24,56 @@ class SchemaDefinitionBuilder implements SchemaDefinitionBuilderInterface
         $this->addColumnDefault($columnParts, $definition);
         
         // Adicionar AUTO_INCREMENT se estiver definido
-        if (isset($definition[ ESchemaKey::AUTO_INCREMENT ]) && $definition[ ESchemaKey::AUTO_INCREMENT ]) {
-            $columnParts[] = 'AUTO_INCREMENT';
-        }
+//        if (isset($definition[ ESchemaKey::AUTO_INCREMENT ]) && $definition[ ESchemaKey::AUTO_INCREMENT ]) {
+//            $columnParts[] = 'AUTO_INCREMENT';
+//        }
         
         return implode(' ', $columnParts);
+    }
+    
+    public function buildUniqueConstraints(array $schema): ?array
+    {
+        $uniqueConstraints = [];
+        foreach ($schema as $column => $definition) {
+            if (isset($definition[ ESchemaKey::UNIQUE ]) && $definition[ ESchemaKey::UNIQUE ] === TRUE) {
+                $uniqueConstraints[] = $column;
+            }
+        }
+        return !empty($uniqueConstraints) ? $uniqueConstraints : NULL;
+    }
+    
+    public function buildTableUniqueConstraints(Blueprint $table, array $uniqueConstraints): void
+    {
+        if (!empty($uniqueConstraints)) {
+            $table->unique($uniqueConstraints);
+        }
+    }
+    
+    public function buildPrimaryKeyDefinition(array $schema): ?array
+    {
+        $primaryKeys = [];
+        foreach ($schema as $column => $definition) {
+            if (isset($definition[ ESchemaKey::PRIMARY_KEY ]) && $definition[ ESchemaKey::PRIMARY_KEY ] === TRUE) {
+                $primaryKeys[] = $column;
+            }
+        }
+        return !empty($primaryKeys) ? $primaryKeys : NULL;
+    }
+    
+    public function buildTablePrimaryKeys(Blueprint $table, array $primaryKeys): void
+    {
+        if (!empty($primaryKeys)) {
+            $table->primary($primaryKeys);
+        }
+    }
+    
+    private function isAutoIncrementColumn(string $tableName, string $columnName): bool
+    {
+        $column = DB::selectOne(
+            'SHOW COLUMNS FROM ' . $tableName . ' WHERE Field = ?',
+            [$columnName],
+        );
+        return strpos($column->Extra, 'auto_increment') !== FALSE;
     }
     
     public function buildForeignKeyDefinition(array $definition, string $column): ?array

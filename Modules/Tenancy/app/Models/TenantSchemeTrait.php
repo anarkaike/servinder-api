@@ -26,6 +26,13 @@ trait TenantSchemeTrait
                     ESchemaKey::DESCRIPTION => 'Name of the user',
                     ESchemaKey::POSITION    => $position++,
                 ],
+                'data' => [
+                    ESchemaKey::TYPE        => EColumnType::JSON,
+                    ESchemaKey::NULLABLE    => TRUE,
+                    ESchemaKey::LABEL       => 'Nome',
+                    ESchemaKey::DESCRIPTION => 'Name of the user',
+                    ESchemaKey::POSITION    => $position++,
+                ],
             ],
         ];
         

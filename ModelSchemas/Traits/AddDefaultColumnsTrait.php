@@ -42,7 +42,7 @@ trait AddDefaultColumnsTrait
         $schema = [
             ...[
                 self::ID => [
-                    ESchemaKey::TYPE           => EColumnType::UNSIGNED_BIG_INTEGER,
+                    ESchemaKey::TYPE           => EColumnType::UNSIGNED_INTEGER,
                     ESchemaKey::PRIMARY_KEY    => TRUE,
                     ESchemaKey::AUTO_INCREMENT => TRUE,
                     ESchemaKey::NOT_NULL       => TRUE,
@@ -72,12 +72,12 @@ trait AddDefaultColumnsTrait
                     ESchemaKey::LABEL       => 'Tenant ID',
                     ESchemaKey::DESCRIPTION => 'ID do Tenant.',
                     ESchemaKey::POSITION    => 1,
-                    ESchemaKey::ON          => [
-                        ESchemaKey::ON_FK     => 'tenants',
-                        ESchemaKey::ON_COLUMN => 'id',
-                        ESchemaKey::ON_DELETE => ESchemaValue::ON_NO_ACTION,
-                        ESchemaKey::ON_UPDATE => ESchemaValue::ON_NO_ACTION,
-                    ],
+//                    ESchemaKey::ON          => [
+//                        ESchemaKey::ON_FK     => 'tenants',
+//                        ESchemaKey::ON_COLUMN => 'id',
+//                        ESchemaKey::ON_DELETE => ESchemaValue::ON_NO_ACTION,
+//                        ESchemaKey::ON_UPDATE => ESchemaValue::ON_NO_ACTION,
+//                    ],
                 ],
             ],
             ...$schema,

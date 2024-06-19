@@ -6,6 +6,8 @@ enum ESchemaKey
 {
     const AUTO_INCREMENT   = 'auto_increment';
     const PRIMARY_KEY      = 'primary_key';
+    
+    const PRIMARY_KEYS = 'primary_keys'; // New key for composite primary keys
     const SYNC_PAUSED      = 'sync_paused';         // Schema does not manage (sinonimous of ONLY_DESCRIPTION)
     const AFTER            = 'after';               // Schema does not manage (sinonimous of ONLY_DESCRIPTION)
     const BEFORE           = 'before';              // Schema does not manage (sinonimous of ONLY_DESCRIPTION)
